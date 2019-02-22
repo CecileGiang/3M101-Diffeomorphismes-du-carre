@@ -21,5 +21,5 @@ Le début du sujet consistera à programmer la déformation d'une grille sous l'
 
 **_Tuteur :_** Frédéric LE ROUX
 
-**_Étudiants: _** FAN Chunyang, GIANG Cécile, HARIGA Séréna, ZHANG Shuting
+**_Étudiants:_** FAN Chunyang, GIANG Cécile, HARIGA Séréna, ZHANG Shuting
 
