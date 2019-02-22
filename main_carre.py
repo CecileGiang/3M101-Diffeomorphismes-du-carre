@@ -10,6 +10,7 @@ SIMPLIFICATION:
     
     L'espace métrique des difféomorphimes du carré [0,1]²
     est connexe par arcs.
+
 '''
 
 import math
@@ -21,7 +22,6 @@ from mpl_toolkits.mplot3d import Axes3D
 #matplotlib inline
 plt.rc('figure', figsize=(12,9))
 
-
 # Fonction de calcul d'un C_inf-difféormorphisme
 
 '''
@@ -30,11 +30,11 @@ ie que les bords sont invariants par la fonction. Nous la prendrons gaussienne, 
 Notre fonction f sera telle que f(x,y) = (f1(x,y),f2(x,y)).
 '''
 
-def f1(x,y,alpha=0.2):
-    return y+alpha*np.exp(-10*(x**2+y**2))
-
-def f2(x,y,beta=0.45):
+def f1(x,y,beta=0.45):
     return x+beta*np.exp(-15*(x**2+y**2))
+
+def f2(x,y,alpha=0.2):
+    return y+alpha*np.exp(-10*(x**2+y**2))
 
 
 def f(x,y,alpha=0.2,beta=0.45):
@@ -138,10 +138,10 @@ ax5.plot_surface(X, Y, Z, rstride=1, cstride=1,
 ax5.set_title('Surface f2');
 
 
-############################# CONSTRUCTION GRILLE - REPRÉSENTATION DU DIFÉOMORPHISME DU CARRÉ #############################
+###################### CONSTRUCTION GRILLE - REPRÉSENTATION DU DIFÉOMORPHISME DU CARRÉ #############################
 
 
-#Feuilletage horizontal: y fixés
+#Feuillage horizontal: y fixés
 
 Fh = []
 eps = 0.05
@@ -150,7 +150,7 @@ for y in np.arange(-1,1+eps,eps):
     Fh.append([(x,y) for x in np.arange(-1,1+eps,eps)])
 
 
-#Feuilletage vertical: x fixés
+#Feuillage vertical: x fixés
 
 Fv = []
 
@@ -183,8 +183,8 @@ for ligne_h in Fh: #y fixés
     Y = [] #ordonnées à plotter
     
     for i in range(len(pos_finale)):
-        X.append(pos_finale[i][1])
-        Y.append(pos_finale[i][0])
+        X.append(pos_finale[i][0])
+        Y.append(pos_finale[i][1])
 
     plt.plot(X,Y)
 
@@ -195,7 +195,26 @@ for ligne_v in Fv: #x fixés
     Y = [] #ordonnées à plotter
     
     for i in range(len(pos_finale)):
-        X.append(pos_finale[i][1])
-        Y.append(pos_finale[i][0])
-        
+        X.append(pos_finale[i][0])
+        Y.append(pos_finale[i][1])
+    
     plt.plot(X,Y)
+
+############################### VECTEURS ET FONCTIONS D'ANGLE ###################################
+    
+  
+# Calcul du vecteur de l'image d'un point par le difféomorphisme
+    
+'''
+On considère maintenant un point (x,y) auquel on a appliqué notre difféomorphisme.
+Le point image de (x,y) est (x',y') (f(x,y) = (x',y')).
+
+On suppose que (x,y) se trouvait sur une ligne horizontale (respectivement verticale).
+On essaie maintenant de retrouver l'angle du vecteur passant par ce point par rapport à un axe horizontal (resp. vertical).
+Pour cela, on trouve d'abord les coordonnées du vecteur, données par:
+    df/dx = (df1/dx(x,y), df/dx(x,y)) (respectivement df/dx = (df1/dy(x,y), df/dy(x,y)))
+'''
+
+"""
+https://stackoverflow.com/questions/30791504/python-partial-derivatives-easy
+"""
