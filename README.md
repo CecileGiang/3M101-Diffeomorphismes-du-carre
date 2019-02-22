@@ -5,7 +5,7 @@ Le but du sujet est:
 
 __(1)__ de comprendre l'énoncé du théorème suivant, dû à Stephen Smale (1959) :
 
-**_Théorème :** l'espace des difféomorphismes du carré qui sont l'identité sur un voisinage du bord est contractile._
+_**Théorème :** l'espace des difféomorphismes du carré qui sont l'identité sur un voisinage du bord est contractile._
 
 __(2)__ De "programmer" une illustration graphique de ce théorème : on peut représenter graphiquement un difféomorphisme du carré par son action sur une grille (comme dans cet article Wikipedia : https://fr.wikipedia.org/wiki/Diff%C3%A9omorphisme). Le théorème consiste à trouver une façon assez naturelle de déformer un difféomorphisme du carré, et cette déformation sera représenté comme une animation montrant comment la grille se déforme. Le résultat ressemblera un peu au début de cette vidéo : https://www.youtube.com/watch?v=0UDxJRslEek
 
