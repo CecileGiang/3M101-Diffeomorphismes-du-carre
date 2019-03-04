@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Mar  2 16:08:08 2019
+
+@author: GIANG
+"""
+
 ############################## PROJET 3M101 - DÉFORMATION DE DIFFÉOMORPHISMES DU CARRÉ ##############################
 
 '''
