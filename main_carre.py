@@ -208,13 +208,63 @@ for ligne_v in Fv: #x fixés
 '''
 On considère maintenant un point (x,y) auquel on a appliqué notre difféomorphisme.
 Le point image de (x,y) est (x',y') (f(x,y) = (x',y')).
-
 On suppose que (x,y) se trouvait sur une ligne horizontale (respectivement verticale).
 On essaie maintenant de retrouver l'angle du vecteur passant par ce point par rapport à un axe horizontal (resp. vertical).
 Pour cela, on trouve d'abord les coordonnées du vecteur, données par:
-    df/dx = (df1/dx(x,y), df/dx(x,y)) (respectivement df/dx = (df1/dy(x,y), df/dy(x,y)))
+    df/dx = (df1/dx(x,y), df2/dx(x,y)) (respectivement df/dy = (df1/dy(x,y), df2/dy(x,y)))
 '''
 
 """
 https://stackoverflow.com/questions/30791504/python-partial-derivatives-easy
 """
+
+import sympy as sp
+
+"""
+######################### NOTE IMPORTANTE #########################
+
+A partir de maintenant on utilise le module sympy. On devra rentrer en argument de fonction
+des fonctions sous forme symbolique.
+
+Par exemple pour la première fonction gradient difinie ci-dessous, nous ne pouvons pas
+directement l'appliquer aux fonctions f1 et f2 définies plus haut de manière standard.
+A la place, il faut les réécrire:
+    alpha=0.45
+    beta=0.2
+    f1=x+alpha*sp.exp(-15*(x**2+y**2))
+    f2=y+alpha*np.exp(-10*(x**2+y**2))
+"""
+
+def gradient(f1, f2, liste_var='x y'):
+    """
+    Définition: function*str*var -> list[functions]
+    Renvoie le gradient de la fonction f, sous forme d'une liste de fonctions,
+    suivant les variables écrites dans liste_var.
+    
+    gradient(f,'x y')=[df1/dx, df2/dx, df1/dy, df2/dy]
+    
+    Les variables x et y sont données de la manière suivante: "x y"
+    avec des noms de variables sous forme d'une seule lettre
+    """
+    
+    #liste des dérivées partielles 
+    gradient=[]
+
+    x,y = sp.symbols(liste_var,real=True)
+
+    gradient.append(sp.lambdify(x,sp.diff(f1,x))) #dérivée partielle de f1 par rapport à x
+    gradient.append(sp.lambdify(x,sp.diff(f2,x))) #dérivée partielle de f2 par rapport à x
+    gradient.append(sp.lambdify(y,sp.diff(f1,y)))
+    gradient.append(sp.lambdify(y,sp.diff(f2,y)))
+
+    return gradient
+    
+def vecteur_image(f,x,y):
+    """
+    Définition: function*float*float -> 
+    Renvoie les coordonnées du vecteur image de f au point (x,y).
+    """
+    #caldul pour f1
+    
+    
+    return
