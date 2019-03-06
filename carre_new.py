@@ -58,7 +58,10 @@ def diff_sym(_f):
 
 
 def normer(_diff_num):
-    row_sums = _diff_num.sum(axis=1)
+    carre = _diff_num * _diff_num
+    row_sums = carre.sum(axis=0)
+    for i in range(len(row_sums)):
+        row_sums[i] = math.sqrt(row_sums[i])
     normed_mat = _diff_num / row_sums[:, np.newaxis]
     return normed_mat
 
@@ -115,10 +118,10 @@ def diff_via_angle_num(_angle_num):
     """
 
     a1 = math.sin(_angle_num[0])
-    a3 = math.sin(_angle_num[1])
     a2 = math.cos(_angle_num[0])
+    a3 = math.sin(_angle_num[1])
     a4 = math.cos(_angle_num[1])
-    return [[a1, a2], [a3, a4]]
+    return [[a1, a3], [a2, a4]]
 
 
 def afficher_h(_f):
@@ -164,7 +167,7 @@ print("df= ", df, "\n---")
 print(df)
 point = [0.5, 0.5]
 df_num = diff_num(df, point)
-print("df_num, en poinr ",point,"= ", df_num, "\n---")
+print("df_num, en poinr ", point, "= ", df_num, "\n---")
 angles = angle_num(df_num)
 print("angles= ", angles, "\n---")
 df_angles = diff_via_angle_num(angles)
