@@ -16,9 +16,9 @@ class fonc_diff_infini:
         self._num = sp.lambdify((self._x, self._y), self._expr, "numpy")
         self._df_sym = None
         self._df_num = None
-        self.t0, self.t1, self.taille = None, None, None  # pas encore utilises
-        self._tab_df = None  # pas encore utilises
-        self._tab_angles = None  # pas encore utilises
+        self._plan = [None, None, None, None]  # t0, t1, taille, plan
+        self._tab_df = [None, None, None, None]  # t0, t1, taille, tab_df
+        self._tab_angles_R = [None, None, None, None]  # t0, t1, taille, tab_angles_R
 
     def sym(self):
         return self._expr
@@ -113,7 +113,13 @@ class fonc_diff_infini:
         :param taille:
         :return:
         """
+        if [t0, t1, taille] == self._plan[:3]:
+            if self._plan[3] is not None:
+                return self._plan[3]
+        else:
+            self._plan[:3] = [t0, t1, taille]
         axe_x, axe_y = np.meshgrid(np.linspace(t0, t1, taille), np.linspace(t0, t1, taille))
+        self._plan[3] = axe_x, axe_y
         return axe_x, axe_y
 
     def tab_df(self, t0=-1, t1=1, taille=50):
@@ -128,14 +134,22 @@ class fonc_diff_infini:
         un point, resultat[0][0] contient les a de chaque point ET DANS LA TRUCTURE DE numpy.meshgrid. De meme,
         resultat[0][1] contient les c, resultat[1][0] contient les b, et resultat[1][1] contient les d.
         """
+        if [t0, t1, taille] == self._tab_df[:3]:
+            if self._tab_df[3] is not None:
+                return self._tab_df[3]
+        else:
+            self._tab_df[:3] = [t0, t1, taille]
+
         if self._df_num is None:
             self.df_num()
+
         axe_x, axe_y = self.plan(t0, t1, taille)
-        return self.df(axe_x, axe_y)
+        self._tab_df[3] = self._df_num(axe_x, axe_y)
+        return self._tab_df[3]
 
     def draw_df(self, direction='a', t0=-1, t1=1, taille=50):
-        tab_df = self.tab_df(t0, t1, taille)
         axe_x, axe_y = self.plan(t0, t1, taille)
+        tab_df = self.tab_df(t0, t1, taille)
         if direction == 'h':
             plt.quiver(axe_x, axe_y, tab_df[0][0], tab_df[1][0])
             plt.xlabel(r'$x_1$')
@@ -164,7 +178,94 @@ class fonc_diff_infini:
         self.draw_df(direction, t0, t1, taille)
 
     def tab_angles_R(self, t0=-1, t1=1, taille=50):
-        pass
+        if [t0, t1, taille] == self._tab_angles_R[:3]:
+            print("tab_angles_R true: ",self._tab_angles_R[:3])
+            if self._tab_angles_R[3] is not None:
+                print("tab_angles_R not None")
+                return self._tab_angles_R[3]
+        else:
+            print("tab_angles_R false, ",self._tab_angles_R[:3])
+            self._tab_angles_R[:3] = [t0, t1, taille]
+            print("tab_angles_R[:3], ", self._tab_angles_R[:3])
+
+        tab_df = self.tab_df(t0, t1, taille)
+        tab_angles_x_2pi = np.arctan2(tab_df[0][0], tab_df[1][0])%(2*math.pi)
+        tab_angles_y_2pi = np.arctan2(tab_df[0][1], tab_df[1][1])%(2*math.pi)
+
+
+        def corrigeur(tab):
+            # 获取列的个数
+            # Obtenir le nombre de colonnes
+            width = len(tab[0])
+            # 声明储存修正后角度的集合
+            # Déclarer l'ensemble des angles corrigés
+            tab_angle_R = []
+            # 按行遍历未修正的角度集合，来修正theta_x的数据
+            # Parcourir l'ensemble des angles non-corrigé ligne par ligne, pour corriger les données de theta_x
+            for ligne in tab:
+                # 声明每行的修正角度集合
+                # Déclarer l'ensemble des angles corrigés d'une ligne
+                angle_ligne_R = []
+                # 初始化每行最开头的角度，奠定随后各点真实角度的偏移基准
+                # Initialiser le premier angle d'une ligne. C'est la base de biais de l'angle de point suivant.
+                if ligne[0] < math.pi:
+                    # 如果每行最初的角度是正方向的（即逆时针）（因为在生成tab_angle_pi时每个角度都被模pi）
+                    # 注意ligne中每个元素其实是一个含两个元素的np.array
+                    # Si le premier angle est dans le sens trigonométrique (sens inverse (ou contraire) des aiguilles
+                    # d'une montre) (car l'angle 'tab_angle_pi' a été modulo Pi après qu'il était généré)
+                    # Attention, chaque élément dans 'ligne' est en type de 'np.array' qui contient deux éléments
+                    angle_ligne_R.append(ligne[0])
+                else:
+                    # 反之为逆方向（顺时针）
+                    # Sinon, c'est le sens des aiguilles d'une montre
+                    angle_ligne_R.append(ligne[0] - 2 * math.pi)
+
+                # 为这一行随后（从左到右）每个角度计算相对于前一个角度的实际偏移量
+                # Calculer le biais réel de chaque point suivant par rapport au son point précédent
+                for i in range(1, width):
+                    # 计算偏移量的绝对值
+                    # Calculer la valeur absolue du biais
+                    diff = abs(ligne[i] - ligne[i - 1])
+                    # 判断偏移是否导致真实值超越arctan的定义域边界
+                    # Déterminer si ce biais contuit que la valeur réelle de l'angle passe (la multiplication de) le
+                    # bord de l'ensemble de definition de arctan
+                    if diff > math.pi:
+                        # 如果大于Pi，则说明偏移导致真实角度突破arctan的定义域边界，则真实的偏移角度应该是2*Pi - diff
+                        # Si la valeur > Pi, alors le biais constuit le passage, le biais réel doit être 2*Pi - diff
+                        diff = 2 * math.pi - diff
+                        # 只有两种突破边界的情况：
+                        # il n'existe que deux cas du passer le bord:
+                        if ligne[i] >= ligne[i - 1]:
+                            # 上一个角度大于但接近0，下一个角度（反方向）顺时针偏移后为负角度，取模后变成接近pi的角度
+                            # l'angle précédent est proche à 0 (mod 2*Pi), l'angle suivant est dans le sens
+                            # trigonométrique, et devient proche à Pi après modulo.
+                            angle_ligne_R.append(angle_ligne_R[i - 1] - diff)
+                        else:
+                            # 上一个角度接近2*pi，下一个角度（正方向）逆时针偏移后超过pi，取模后变成接近0的角度
+                            # l'angle précédent est et proche à 2*Pi (mod 2*Pi), l'angle suivant est dans le sens des
+                            # aiguilles d'une montre, et devient proche à 0 après modulo.
+                            angle_ligne_R.append(angle_ligne_R[i - 1] + diff)
+                    else:
+                        if ligne[i] >= ligne[i - 1]:
+                            # 下一个角度比上一个角度大，（正方向）逆时针偏移
+                            # l'angle suivant est plus grand que le précédent, le biais dans le sens trigonométrique
+                            angle_ligne_R.append(angle_ligne_R[i - 1] + diff)
+                        else:
+                            # 下一个角度比上一个角度小，（反方向）顺时针偏移
+                            # l'angle suivant est plus petit que le précédent, le biais dans le sens des aiguilles
+                            # d'une montre
+                            angle_ligne_R.append(angle_ligne_R[i - 1] - diff)
+                # 将当前行储存
+                # Enregistrer cette ligne courante
+                tab_angle_R.append(angle_ligne_R)
+            return tab_angle_R
+        
+        tab_angles_x_R = corrigeur(tab_angles_x_2pi)
+        tab_angles_y_R = corrigeur(tab_angles_y_2pi.T)
+
+        #tab_angles_x_R, tab_angles_y_R=tab_angles_x_2pi,tab_angles_y_2pi.T
+        self._tab_angles_R[3] = tab_angles_x_R, tab_angles_y_R
+        return self._tab_angles_R[3]
 
 
 def f_ex(a, b, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
@@ -211,18 +312,40 @@ def f_ex2(a, b, _theta, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
     return r_ex2(_theta, g_sym, g_num, x_sym, y_sym)
 
 
+x, y = sp.symbols("x y")
+le_t0, le_t1, la_taille = -1, 1, 500
 ex = fonc_diff_infini(f_ex2(0.2, 5, 5 * math.pi)[0])
-print(ex.sym())
-print(ex.num())
-print(ex.f(0, 0))
-print(ex.df_sym())
-print(ex.df(0, 0))
-print(ex.tab_df())
+### expr = x + 0.45 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.2 * sp.exp(-10 * (x ** 2 + y ** 2))
+### ex = fonc_diff_infini(expr)
+# print(ex.sym())
+# print(ex.num())
+# print(ex.f(0, 0))
+# print(ex.df_sym())
+# print(ex.df(0, 0))
 ex.draw()
-ex.draw('h')
-ex.draw('v')
-ex.draw_df()
-ex.draw_df('h')
-ex.draw_df('v')
+# ex.draw('h')
+# ex.draw('v')
+# print(ex.tab_df())
+# ex.draw_df()
+# ex.draw_df('h')
+# ex.draw_df('v')
 ex.draw_all('h')
 ex.draw_all('v')
+# print(ex.tab_df(le_t0, le_t0, la_taille))
+print(ex.tab_angles_R(-le_t0, le_t1, la_taille))
+
+plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[0][la_taille // 2])
+my_y_ticks = np.arange(-math.pi, 1.5 * math.pi, 0.25 * math.pi)
+plt.yticks(my_y_ticks)
+plt.title("direction x")
+plt.xlabel("x")
+plt.ylabel('$\Theta$')
+plt.show()
+
+plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[1][la_taille // 2])
+my_y_ticks = np.arange(-math.pi, 1.5* math.pi, 0.25 * math.pi)
+plt.yticks(my_y_ticks)
+plt.title("direction y")
+plt.xlabel("y")
+plt.ylabel('$\Theta$')
+plt.show()
