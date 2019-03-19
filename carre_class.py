@@ -16,9 +16,9 @@ class fonc_diff_infini:
         self._num = sp.lambdify((self._x, self._y), self._expr, "numpy")
         self._df_sym = None
         self._df_num = None
-        self.t0, self.t1, self.taille = None, None, None # pas encore utilises
-        self._tab_df = None # pas encore utilises
-        self._tab_angles = None # pas encore utilises
+        self.t0, self.t1, self.taille = None, None, None  # pas encore utilises
+        self._tab_df = None  # pas encore utilises
+        self._tab_angles = None  # pas encore utilises
 
     def sym(self):
         return self._expr
@@ -125,7 +125,7 @@ class fonc_diff_infini:
         :param t1:
         :param taille:
         :return: le resultat est en numpy.array. Soit [[a,b],[c,d]] la matrice jacobienne du diffeomorphisme dans
-        un point, resultat[0][0] contient les a de chaque point ET DANS LA TRUCTURE DE numpy.meshgrid. De meme, 
+        un point, resultat[0][0] contient les a de chaque point ET DANS LA TRUCTURE DE numpy.meshgrid. De meme,
         resultat[0][1] contient les c, resultat[1][0] contient les b, et resultat[1][1] contient les d.
         """
         if self._df_num is None:
@@ -153,8 +153,15 @@ class fonc_diff_infini:
             plt.ylabel(r'$x_2$ et $y_2$')
             plt.show()
 
-    def draw_all(self):
-        pass
+    def draw_all(self, direction='a', t0=-1, t1=1, taille=50):
+        if direction == 'h':
+            self.draw_h(t0, t1, taille)
+        elif direction == 'v':
+            self.draw_v(t0, t1, taille)
+        else:
+            self.draw_h(t0, t1, taille)
+            self.draw_v(t0, t1, taille)
+        self.draw_df(direction, t0, t1, taille)
 
     def tab_angles_R(self, t0=-1, t1=1, taille=50):
         pass
@@ -217,3 +224,5 @@ ex.draw('v')
 ex.draw_df()
 ex.draw_df('h')
 ex.draw_df('v')
+ex.draw_all('h')
+ex.draw_all('v')
