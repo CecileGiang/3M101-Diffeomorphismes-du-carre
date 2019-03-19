@@ -296,7 +296,7 @@ def champ_vecteur_bis(f_):
     Vh=[]
     
     for ligne_h in Fh:
-        vh=[[vecteur_xy_h(f_,p[0],p[1]),vecteur_xy_v(f_,p[0],p[1])] for p in ligne_h]
+        vh=[vecteur_xy_h(f_,p[0],p[1]) for p in ligne_h]
         Vh.append(vh)
     
     
@@ -304,7 +304,7 @@ def champ_vecteur_bis(f_):
     Vv=[]
     
     for ligne_v in Fv:
-        vv=[[vecteur_xy_h(f_,p[0],p[1]),vecteur_xy_v(f_,p[0],p[1])] for p in ligne_h]
+        vv=[vecteur_xy_v(f_,p[0],p[1]) for p in ligne_v]
         Vv.append(vv)
     
     return Vh, Vv
@@ -333,12 +333,12 @@ print("Temps d'exécution pour champ_vecteur bis:",end-start)
 #Temps d'exécution pour champ_vecteur: 8.246649265289307
 #Temps d'exécution pour champ_vecteur bis: 5.963469982147217
 """
-
+"""
 def angle(Vh,Vv,eps=0.00000001):
-    """
-    Retourne les listes de couples d'angles réels Ah et Av correspondant respectivement au champ de vecteur composé de Vh
-    (vecteurs pour Fh) et Vv (vecteurs pour Fv).
-    """
+
+    #Retourne les listes de couples d'angles réels Ah et Av correspondant respectivement au champ de vecteur composé de Vh
+    #(vecteurs pour Fh) et Vv (vecteurs pour Fv).
+
     Ah=[]
     Av=[]
     #Calcul d'angles pour les vecteurs de Vh -feuilletage horizontal
@@ -348,9 +348,9 @@ def angle(Vh,Vv,eps=0.00000001):
         for v in ligne_h[1:]:
             angle_h=math.atan2(v[0][0],v[0][1])
             angle_v=math.atan2(v[1][0],v[1][1])
-            """
-            À RAJOUTER: rendre les angles réels
-            """
+      
+            #À RAJOUTER: rendre les angles réels
+          
             ah.append((angle_h,angle_v))
         Ah.append(ah)
     
@@ -362,13 +362,104 @@ def angle(Vh,Vv,eps=0.00000001):
         for v in ligne_v[1:]:
             angle_h=math.atan2(v[0][0],v[0][1])
             angle_v=math.atan2(v[1][0],v[1][1])
-            """
-            À RAJOUTER: rendre les angles réels
-            """
+     
+            #À RAJOUTER: rendre les angles réels
+        
             av.append((angle_h,angle_v))
         Av.append(av)
     
     Ah=np.asarray(Ah)
     Av=np.array(Av)
     
+    return Ah,Av
+"""
+"""
+def angle_bis(Vh,Vv):
+#    Retourne la liste des angles horizontaux pour Vh et des angles verticaux pour Vv,
+#    avec Vh et Vv respectivement la liste des vecteurs horizontaux de Fh
+#    et la liste des vecteurs horizontaux de Fv.
+    Ah=[]
+    Av=[]
+    #Calcul d'angles pour les vecteurs de Vh -feuilletage horizontal
+    for ligne_h in Vh:
+        ah=[(math.atan2(ligne_h[0][0],ligne_h[0][1]))] #angle du 1er vecteur de la ligne
+        for v in ligne_h[1:]:
+            angle_h=math.atan2(v[0],v[1])
+            #À RAJOUTER: rendre les angles réels
+            
+            
+            
+          
+            ah.append(angle_h)
+        Ah.append(ah)
+    
+    #Calcul d'angles pour les vecteurs de Vv -feuilletage vertical
+    
+    for ligne_v in Vv:
+        av=[(math.atan2(ligne_v[0][0],ligne_v[0][1]))] #angle du 1er vecteur de la ligne
+        for v in ligne_v[1:]:
+            angle_v=math.atan2(v[0],v[1])
+            
+            #À RAJOUTER: rendre les angles réels
+          
+            av.append(angle_v)
+        Av.append(av)
+        
+    Ah=np.asarray(Ah)
+    Av=np.array(Av)
+    
+    return Ah,Av
+"""
+
+def angle_bis(Vh,Vv):
+#    Retourne la liste des angles horizontaux pour Vh et des angles verticaux pour Vv,
+#    avec Vh et Vv respectivement la liste des vecteurs horizontaux de Fh
+#    et la liste des vecteurs horizontaux de Fv.
+    Ah=[]
+    Av=[]
+    #Calcul d'angles pour les vecteurs de Vh -feuilletage horizontal
+    for ligne_h in Vh:
+        ah=[math.atan2(ligne_h[0][0],ligne_h[0][1])] #angle du 1er vecteur de la ligne
+        for v in ligne_h[1:]:
+            angle_h=math.atan2(v[0],v[1])%math.pi
+            #À RAJOUTER: rendre les angles réels
+            diff=math.fabs(angle_h-ah[-1])
+            if diff>math.pi/2:
+                diff=math.pi/2
+                if angle_h>=ah[-1]:
+                    ah.append(ah[-1]-diff)
+                else:
+                    ah.append(ah[-1]+diff)
+            else:
+                if angle_h>=ah[-1]:
+                    ah.append(ah[-1]+diff)
+                else:
+                    ah.append(ah[-1]-diff)
+                    
+        Ah.append(ah)
+        
+    #Calcul d'angles pour les vecteurs de Vv -feuilletage vertical
+    for ligne_v in Vv:
+        av=[math.atan2(ligne_v[0][0],ligne_v[0][1])] #angle du 1er vecteur de la ligne
+        for v in ligne_v[1:]:
+            angle_v=math.atan2(v[0],v[1])%math.pi
+            #À RAJOUTER: rendre les angles réels
+            diff=math.fabs(angle_v-av[-1])
+            if diff>math.pi/2:
+                diff=math.pi/2
+                if angle_v>=av[-1]:
+                    av.append(av[-1]-diff)
+                else:
+                    av.append(av[-1]+diff)
+            else:
+                if angle_v>=av[-1]:
+                    av.append(av[-1]+diff)
+                else:
+                    av.append(av[-1]-diff)
+                    
+        Av.append(av)
+        
+    Ah=np.asarray(Ah)
+    Av=np.array(Av)
+
     return Ah,Av
