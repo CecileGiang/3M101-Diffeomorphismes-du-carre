@@ -57,8 +57,8 @@ def define_f(alpha=0.2,beta=0.45):
     sous deux formes: celle d'une fonction standard python et d'une expression sympy
     """
     #Définit la fonction python f
-    def f(x_,y_):
-        ''''''  
+    def f(x_,y_,alpha=0.2,beta=0.45):
+        
         def f1(x_,y_):
             return x_+beta*np.exp(-15*(x_**2+y_**2))
         def f2(x_,y_):
@@ -85,7 +85,6 @@ def evaluate_f(f_expr,x_,y_):
     f2_ = f2.subs([(x,x_),(y,y_)])
         
     return (f1_.evalf(),f2_.evalf())
-
 
 
 ###################### CONSTRUCTION GRILLE - REPRÉSENTATION DU DIFÉOMORPHISME DU CARRÉ #############################
@@ -236,10 +235,24 @@ def jacobienne_num(f_,x_,y_):
 
 # Calcul du vecteur de l'image d'un point par le difféomorphisme
   
-def champ_vecteur_h(f_, x_, y_):
-    return (jacobienne_num(f_,x_,y_)[0][0],jacobienne_num(f_,x_,y_)[1][0])
+def vecteur_xy_h(f_, x_, y_): 
+    """
+    Retourne le vecteur horizontal correspondant au difféomorphisme f_ (f_ une expression sympy)
+    pris au point (x_,y_)
+    """
+    J=jacobienne_num(f_,x_,y_)
+    return (J[0][0],J[1][0])
+
+def vecteur_xy_v(f_, x_, y_): 
+    """
+    Retourne le vecteur vertical correspondant au difféomorphisme f_ (f_ une expression sympy)
+    pris au point (x_,y_)
+    """
+    J=jacobienne_num(f_,x_,y_)
+    return (J[0][1],J[1][1])
 
 
+# Calcul du champ de vecteur d'un difféomorphisme sur une grille unité
 
 def champ_vecteur(f_):
     """
@@ -254,7 +267,7 @@ def champ_vecteur(f_):
     Vh=[]
     
     for ligne_h in Fh:
-        vh=[(jacobienne_num(f_,p[0],p[1])[0][0],jacobienne_num(f_,p[0],p[1])[1][0]) for p in ligne_h]
+        vh=[[(jacobienne_num(f_,p[0],p[1])[0][0],jacobienne_num(f_,p[0],p[1])[1][0]),(jacobienne_num(f_,p[0],p[1])[0][1],jacobienne_num(f_,p[0],p[1])[1][1])] for p in ligne_h]
         Vh.append(vh)
     
     
@@ -262,9 +275,100 @@ def champ_vecteur(f_):
     Vv=[]
     
     for ligne_v in Fv:
-        vv=[(jacobienne_num(f_,p[0],p[1])[0][1],jacobienne_num(f_,p[0],p[1])[1][1]) for p in ligne_v]
+        vv=[[(jacobienne_num(f_,p[0],p[1])[0][0],jacobienne_num(f_,p[0],p[1])[1][0]),(jacobienne_num(f_,p[0],p[1])[0][1],jacobienne_num(f_,p[0],p[1])[1][1])] for p in ligne_v]
         Vv.append(vv)
     
     return Vh, Vv
 
 
+def champ_vecteur_bis(f_):
+    """
+    Retourne le champ de vecteur du difféomorphisme f sous forme d'expression sympy appliqué à une grille unité.
+    En chaque point f(x,y), on calcule les vecteurs vh et vv tels que:
+        vh = | df1/dx |         vv = | df1/dy |
+             | df2/dx |              | df2/dy |
+    Ainsi on retourne une liste de liste (pour chaque ligne de feuilletage) de couples de couples vecteurs:
+        f(x,y) -> [(vh1,vh2),(vv1,vv2)]
+    """
+    Fh, Fv = grille_unite(show=False)
+ 
+    #Calcul du champ de vecteurs pour Fh
+    Vh=[]
+    
+    for ligne_h in Fh:
+        vh=[[vecteur_xy_h(f_,p[0],p[1]),vecteur_xy_v(f_,p[0],p[1])] for p in ligne_h]
+        Vh.append(vh)
+    
+    
+    #Calcul du champ de vecteurs pour Fv
+    Vv=[]
+    
+    for ligne_v in Fv:
+        vv=[[vecteur_xy_h(f_,p[0],p[1]),vecteur_xy_v(f_,p[0],p[1])] for p in ligne_h]
+        Vv.append(vv)
+    
+    return Vh, Vv
+
+
+
+"""     TEMPS D'EXÉCUTION POUR LES CALCULS DE CHAMPS DE VECTEURS
+
+import time
+
+#Difféomorphisme sous forme d'expression sympy
+f_expr=define_f()[1]
+
+#champ vecteur
+start=time.time()
+champ_vecteur(f_expr)
+end=time.time()
+print("Temps d'exécution pour champ_vecteur:",end-start)
+
+#champ vecteur bis
+start=time.time()
+champ_vecteur_bis(f_expr)
+end=time.time()
+print("Temps d'exécution pour champ_vecteur bis:",end-start)
+
+#Temps d'exécution pour champ_vecteur: 8.246649265289307
+#Temps d'exécution pour champ_vecteur bis: 5.963469982147217
+"""
+
+def angle(Vh,Vv,eps=0.00000001):
+    """
+    Retourne les listes de couples d'angles réels Ah et Av correspondant respectivement au champ de vecteur composé de Vh
+    (vecteurs pour Fh) et Vv (vecteurs pour Fv).
+    """
+    Ah=[]
+    Av=[]
+    #Calcul d'angles pour les vecteurs de Vh -feuilletage horizontal
+    for ligne_h in Vh:
+        v0=ligne_h[0]
+        ah=[(math.atan2(v0[0][0],v0[0][1]),math.atan2(v0[1][0],v0[1][1]))] #angle du 1er vecteur de la ligne
+        for v in ligne_h[1:]:
+            angle_h=math.atan2(v[0][0],v[0][1])
+            angle_v=math.atan2(v[1][0],v[1][1])
+            """
+            À RAJOUTER: rendre les angles réels
+            """
+            ah.append((angle_h,angle_v))
+        Ah.append(ah)
+    
+    #Calcul d'angles pour les vecteurs de Vv -feuilletage vertical
+    
+    for ligne_v in Vv:
+        v0=ligne_v[0]
+        av=[(math.atan2(v0[0][0],v0[0][1]),math.atan2(v0[1][0],v0[1][1]))] #angle du 1er vecteur de la ligne
+        for v in ligne_v[1:]:
+            angle_h=math.atan2(v[0][0],v[0][1])
+            angle_v=math.atan2(v[1][0],v[1][1])
+            """
+            À RAJOUTER: rendre les angles réels
+            """
+            av.append((angle_h,angle_v))
+        Av.append(av)
+    
+    Ah=np.asarray(Ah)
+    Av=np.array(Av)
+    
+    return Ah,Av
