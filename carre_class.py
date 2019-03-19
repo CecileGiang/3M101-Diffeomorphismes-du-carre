@@ -8,7 +8,15 @@ from scipy.misc import derivative
 
 
 class fonc_diff_infini:
-    'Classe de fonction en C-diff-infini R^2->R^2'
+    """
+    Classe de fonction en C-diff-infini R^2->R^2
+    Ici, on pense que un diffeomorphisme est un objet dans le classe de fonction en C-diff-infini R^2->R^2.
+    On declare un tel objet par une expression de sympy, qui prend deux arguments x et y, et retourne deux valeurs.
+    Par ex.:
+        x,y=sp.symbols("x y")
+        expr=(x+y,x*y)
+        ex=fonc_diff_infini(expr,(x,y))
+    """
 
     def __init__(self, expr, vars_sym=(sp.symbols("x y"))):
         self._expr = expr
@@ -21,6 +29,9 @@ class fonc_diff_infini:
         self._tab_angles_R = [None, None, None, None]  # t0, t1, taille, tab_angles_R
 
     def sym(self):
+        """
+        :return: l'expression en sympy du diffeomorphisme
+        """
         return self._expr
 
     def num(self):
@@ -92,6 +103,15 @@ class fonc_diff_infini:
             plt.plot(X, Y)
 
     def draw(self, direction='a', t0=-1, t1=1, taille=50):
+        """
+        Afficher le diffeomorphisme par une image en 2D
+        :param direction: soit 'h' pour la direction horientale, soit 'v' pour la direction verticale, soit l'autre pour
+         tous afficher en une meme image
+        :param t0:
+        :param t1:
+        :param taille:
+        :return:
+        """
         if direction == 'h':
             self.draw_h(t0, t1, taille)
             plt.show()
@@ -148,6 +168,14 @@ class fonc_diff_infini:
         return self._tab_df[3]
 
     def draw_df(self, direction='a', t0=-1, t1=1, taille=50):
+        """
+        Afficher le champ de vecteurs pour un diffeomorphisme, les autres sont parailles que draw
+        :param direction:
+        :param t0:
+        :param t1:
+        :param taille:
+        :return:
+        """
         axe_x, axe_y = self.plan(t0, t1, taille)
         tab_df = self.tab_df(t0, t1, taille)
         if direction == 'h':
@@ -168,6 +196,15 @@ class fonc_diff_infini:
             plt.show()
 
     def draw_all(self, direction='a', t0=-1, t1=1, taille=50):
+        """
+        Pour un diffeomorphisme, afficher une fois lui-meme et son champ de vecteurs en une figure, les aures sont
+        parailles que draw et que draw_df
+        :param direction:
+        :param t0:
+        :param t1:
+        :param taille:
+        :return:
+        """
         if direction == 'h':
             self.draw_h(t0, t1, taille)
         elif direction == 'v':
@@ -179,19 +216,18 @@ class fonc_diff_infini:
 
     def tab_angles_R(self, t0=-1, t1=1, taille=50):
         if [t0, t1, taille] == self._tab_angles_R[:3]:
-            print("tab_angles_R true: ",self._tab_angles_R[:3])
+            print("tab_angles_R true: ", self._tab_angles_R[:3])
             if self._tab_angles_R[3] is not None:
                 print("tab_angles_R not None")
                 return self._tab_angles_R[3]
         else:
-            print("tab_angles_R false, ",self._tab_angles_R[:3])
+            print("tab_angles_R false, ", self._tab_angles_R[:3])
             self._tab_angles_R[:3] = [t0, t1, taille]
             print("tab_angles_R[:3], ", self._tab_angles_R[:3])
 
         tab_df = self.tab_df(t0, t1, taille)
-        tab_angles_x_2pi = np.arctan2(tab_df[0][0], tab_df[1][0])%(2*math.pi)
-        tab_angles_y_2pi = np.arctan2(tab_df[0][1], tab_df[1][1])%(2*math.pi)
-
+        tab_angles_x_2pi = np.arctan2(tab_df[0][0], tab_df[1][0]) % (2 * math.pi)
+        tab_angles_y_2pi = np.arctan2(tab_df[0][1], tab_df[1][1]) % (2 * math.pi)
 
         def corrigeur(tab):
             # 获取列的个数
@@ -259,11 +295,11 @@ class fonc_diff_infini:
                 # Enregistrer cette ligne courante
                 tab_angle_R.append(angle_ligne_R)
             return tab_angle_R
-        
+
         tab_angles_x_R = corrigeur(tab_angles_x_2pi)
         tab_angles_y_R = corrigeur(tab_angles_y_2pi.T)
 
-        #tab_angles_x_R, tab_angles_y_R=tab_angles_x_2pi,tab_angles_y_2pi.T
+        # tab_angles_x_R, tab_angles_y_R=tab_angles_x_2pi,tab_angles_y_2pi.T
         self._tab_angles_R[3] = tab_angles_x_R, tab_angles_y_R
         return self._tab_angles_R[3]
 
@@ -312,6 +348,7 @@ def f_ex2(a, b, _theta, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
     return r_ex2(_theta, g_sym, g_num, x_sym, y_sym)
 
 
+""" Zone de tester le code"""
 x, y = sp.symbols("x y")
 le_t0, le_t1, la_taille = -1, 1, 500
 ex = fonc_diff_infini(f_ex2(0.2, 5, 5 * math.pi)[0])
@@ -343,7 +380,7 @@ plt.ylabel('$\Theta$')
 plt.show()
 
 plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[1][la_taille // 2])
-my_y_ticks = np.arange(-math.pi, 1.5* math.pi, 0.25 * math.pi)
+my_y_ticks = np.arange(-math.pi, 1.5 * math.pi, 0.25 * math.pi)
 plt.yticks(my_y_ticks)
 plt.title("direction y")
 plt.xlabel("y")
