@@ -418,14 +418,15 @@ def angle_bis(Vh,Vv):
     Ah=[]
     Av=[]
     #Calcul d'angles pour les vecteurs de Vh -feuilletage horizontal
+    """
     for ligne_h in Vh:
-        ah=[math.atan2(ligne_h[0][0],ligne_h[0][1])] #angle du 1er vecteur de la ligne
+        ah=[math.atan2(ligne_h[0][0],ligne_h[0][1])%(2*math.pi)] #angle du 1er vecteur de la ligne
         for v in ligne_h[1:]:
-            angle_h=math.atan2(v[0],v[1])%math.pi
+            angle_h=math.atan2(v[0],v[1])%(2*math.pi)
             #À RAJOUTER: rendre les angles réels
             diff=math.fabs(angle_h-ah[-1])
-            if diff>math.pi/2:
-                diff=math.pi/2
+            if diff>math.pi:
+                diff=2*math.pi-diff
                 if angle_h>=ah[-1]:
                     ah.append(ah[-1]-diff)
                 else:
@@ -438,25 +439,61 @@ def angle_bis(Vh,Vv):
                     
         Ah.append(ah)
         
+    """
+    for ligne_h in Vh:
+        ah=[]
+        #test sur le 1er angles de la ligne
+        a0=math.atan2(ligne_h[0][0],ligne_h[0][1])%(2*math.pi) #angle du 1er vecteur de la ligne modulo 2*pi
+        if a0 < math.pi:
+            ah.append(a0)
+        else:
+            ah.append(a0-2*math.pi)
+        #Calcul des angles pour le reste des vecteurs de la ligne
+        for v in ligne_h[1:]:
+            angle_h=math.atan2(v[0],v[1]) #angle brut calculé avec atan2
+            angle_h_modulo=angle_h%(2*math.pi) #angle modulo 2*pi qui servira pour calculer la différence avec l'angle précédent
+            #À RAJOUTER: rendre les angles réels
+            diff=abs(angle_h_modulo-ah[-1]%(2*math.pi)) #différence entre les deux angles modulo 2*pi
+            if diff>math.pi:
+                diff=2*math.pi-diff 
+                if angle_h_modulo>=ah[-1]%(2*math.pi):
+                    ah.append(ah[-1]-diff)
+                else:
+                    ah.append(ah[-1]+diff)
+            else:
+                if angle_h_modulo>=ah[-1]%(2*math.pi):
+                    ah.append(ah[-1]+diff)
+                else:
+                    ah.append(ah[-1]-diff)
+                    
+        Ah.append(ah)
+        
     #Calcul d'angles pour les vecteurs de Vv -feuilletage vertical
     for ligne_v in Vv:
-        av=[math.atan2(ligne_v[0][0],ligne_v[0][1])] #angle du 1er vecteur de la ligne
+        av=[]
+        #test sur le 1er angles de la ligne
+        a0=math.atan2(ligne_v[0][0],ligne_v[0][1])%(2*math.pi) #angle du 1er vecteur de la ligne modulo 2*pi
+        if a0 < math.pi:
+            av.append(a0)
+        else:
+            av.append(a0-2*math.pi)
+        #Calcul des angles pour le reste des vecteurs de la ligne
         for v in ligne_v[1:]:
-            angle_v=math.atan2(v[0],v[1])%math.pi
+            angle_v=math.atan2(v[0],v[1]) #angle brut calculé avec atan2
+            angle_v_modulo=angle_v%(2*math.pi) #angle modulo 2*pi qui servira pour calculer la différence avec l'angle précédent
             #À RAJOUTER: rendre les angles réels
-            diff=math.fabs(angle_v-av[-1])
-            if diff>math.pi/2:
-                diff=math.pi/2
-                if angle_v>=av[-1]:
+            diff=math.fabs(angle_v_modulo-av[-1]%(2*math.pi)) #différence entre les deux angles modulo 2*pi
+            if diff>math.pi:
+                diff=2*math.pi-diff 
+                if angle_v_modulo>=av[-1]%(2*math.pi):
                     av.append(av[-1]-diff)
                 else:
                     av.append(av[-1]+diff)
             else:
-                if angle_v>=av[-1]:
+                if angle_v_modulo>=av[-1]%(2*math.pi):
                     av.append(av[-1]+diff)
                 else:
                     av.append(av[-1]-diff)
-                    
         Av.append(av)
         
     Ah=np.asarray(Ah)
