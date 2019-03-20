@@ -25,8 +25,10 @@ class fonc_diff_infini:
         self._df_sym = None
         self._df_num = None
         self._plan = [None, None, None, None]  # t0, t1, taille, plan
+        self._tab_f = [None, None, None, None]  # t0, t1, taille, f(plan)
         self._tab_df = [None, None, None, None]  # t0, t1, taille, tab_df
         self._tab_angles_R = [None, None, None, None]  # t0, t1, taille, tab_angles_R
+        self._simulation = None
 
     def sym(self):
         """
@@ -43,6 +45,35 @@ class fonc_diff_infini:
 
     def f(self, x_num, y_num):
         return self._num(x_num, y_num)
+
+    def plan(self, t0=-1, t1=1, taille=50):
+        """
+        Retourner deux tableaux qui sont les 'rastérisations' (feuillages) d'un plan traitees par numpy.meshgrid.
+        Attention, la structure de ces deux tableaux sont specifiques. Veuilliez-vous afficher ces deux tableaux pour
+        la connaitre. C'est pour faciliter le calcul d'apres.
+        :param t0:
+        :param t1:
+        :param taille:
+        :return:
+        """
+        if [t0, t1, taille] == self._plan[:3]:
+            if self._plan[3] is not None:
+                return self._plan[3]
+        else:
+            self._plan[:3] = [t0, t1, taille]
+        axe_x, axe_y = np.meshgrid(np.linspace(t0, t1, taille), np.linspace(t0, t1, taille))
+        self._plan[3] = axe_x, axe_y
+        return axe_x, axe_y
+
+    def tab_f(self, t0=-1, t1=1, taille=50):
+        if [t0, t1, taille] == self._tab_f[:3]:
+            if self._tab_f[3] is not None:
+                return self._tab_f[3]
+        self._tab_f[:3] = [t0, t1, taille]
+        axe_x, axe_y = self.plan(t0, t1, taille)
+        tab_x, tab_y = self.f(axe_x, axe_y)
+        self._tab_f[3] = (tab_x, tab_y)
+        return tab_x, tab_y
 
     def df_sym(self):
         """
@@ -79,28 +110,12 @@ class fonc_diff_infini:
         return self.df_num()(x_num, y_num)
 
     def draw_h(self, t0=-1, t1=1, taille=50):
-        I = np.linspace(t0, t1, taille)
-        for y_ in np.linspace(t0, t1, taille):  # y fixé
-            pos_init = [(x_, y_) for x_ in I]  # ligne horizontale d'ordonnée y dans le carré unité
-            pos_finale = [self.f(p[0], p[1]) for p in pos_init]
-            X = []  # abscisses à plotter
-            Y = []  # ordonnées à plotter
-            for i in range(len(pos_finale)):
-                X.append(pos_finale[i][0])
-                Y.append(pos_finale[i][1])
-            plt.plot(X, Y)
+        tab_x, tab_y = self.tab_f(t0, t1, taille)
+        plt.plot(tab_x.T, tab_y.T)
 
     def draw_v(self, t0=-1, t1=1, taille=50):
-        I = np.linspace(t0, t1, taille)
-        for x_ in np.linspace(t0, t1, taille):  # x fixé
-            pos_init = [(x_, y_) for y_ in I]
-            pos_finale = [self.f(p[0], p[1]) for p in pos_init]  # juste une translation de la même courbe
-            X = []
-            Y = []
-            for i in range(len(pos_finale)):
-                X.append(pos_finale[i][0])
-                Y.append(pos_finale[i][1])
-            plt.plot(X, Y)
+        tab_x, tab_y = self.tab_f(t0, t1, taille)
+        plt.plot(tab_x, tab_y)
 
     def draw(self, direction='a', t0=-1, t1=1, taille=50):
         """
@@ -123,24 +138,12 @@ class fonc_diff_infini:
             self.draw_v(t0, t1, taille)
             plt.show()
 
-    def plan(self, t0=-1, t1=1, taille=50):
-        """
-        Retourner deux tableaux qui sont les 'rastérisations' (feuillages) d'un plan traitees par numpy.meshgrid.
-        Attention, la structure de ces deux tableaux sont specifiques. Veuilliez-vous afficher ces deux tableaux pour
-        la connaitre. C'est pour faciliter le calcul d'apres.
-        :param t0:
-        :param t1:
-        :param taille:
-        :return:
-        """
-        if [t0, t1, taille] == self._plan[:3]:
-            if self._plan[3] is not None:
-                return self._plan[3]
-        else:
-            self._plan[:3] = [t0, t1, taille]
-        axe_x, axe_y = np.meshgrid(np.linspace(t0, t1, taille), np.linspace(t0, t1, taille))
-        self._plan[3] = axe_x, axe_y
-        return axe_x, axe_y
+    def draw_new(self, t0=-1, t1=1, taille=50):
+        axe_x, axe_y = self.plan(t0, t1, taille)
+        tab_x, tab_y = self.f(axe_x, axe_y)
+        plt.plot(tab_x.T, tab_y.T)
+        plt.plot(tab_x, tab_y)
+        plt.show()
 
     def tab_df(self, t0=-1, t1=1, taille=50):
         """
@@ -216,92 +219,67 @@ class fonc_diff_infini:
 
     def tab_angles_R(self, t0=-1, t1=1, taille=50):
         if [t0, t1, taille] == self._tab_angles_R[:3]:
-            print("tab_angles_R true: ", self._tab_angles_R[:3])
             if self._tab_angles_R[3] is not None:
-                print("tab_angles_R not None")
                 return self._tab_angles_R[3]
         else:
-            print("tab_angles_R false, ", self._tab_angles_R[:3])
             self._tab_angles_R[:3] = [t0, t1, taille]
-            print("tab_angles_R[:3], ", self._tab_angles_R[:3])
 
         tab_df = self.tab_df(t0, t1, taille)
-        tab_angles_x_2pi = np.arctan2(tab_df[0][0], tab_df[1][0]) % (2 * math.pi)
-        tab_angles_y_2pi = np.arctan2(tab_df[0][1], tab_df[1][1]) % (2 * math.pi)
+        tab_angles_x_2pi = np.arctan2(tab_df[0][0], tab_df[1][0])
+        tab_angles_y_2pi = np.arctan2(tab_df[0][1], tab_df[1][1])
+
+        def modulo_2pi(x):
+            y = x
+            while y > math.pi:
+                y -= 2 * math.pi
+            while y < -math.pi:
+                y += 2 * math.pi
+            return y
 
         def corrigeur(tab):
-            # 获取列的个数
-            # Obtenir le nombre de colonnes
-            width = len(tab[0])
-            # 声明储存修正后角度的集合
-            # Déclarer l'ensemble des angles corrigés
-            tab_angle_R = []
-            # 按行遍历未修正的角度集合，来修正theta_x的数据
-            # Parcourir l'ensemble des angles non-corrigé ligne par ligne, pour corriger les données de theta_x
+            tab_R = []
             for ligne in tab:
-                # 声明每行的修正角度集合
-                # Déclarer l'ensemble des angles corrigés d'une ligne
-                angle_ligne_R = []
-                # 初始化每行最开头的角度，奠定随后各点真实角度的偏移基准
-                # Initialiser le premier angle d'une ligne. C'est la base de biais de l'angle de point suivant.
-                if ligne[0] < math.pi:
-                    # 如果每行最初的角度是正方向的（即逆时针）（因为在生成tab_angle_pi时每个角度都被模pi）
-                    # 注意ligne中每个元素其实是一个含两个元素的np.array
-                    # Si le premier angle est dans le sens trigonométrique (sens inverse (ou contraire) des aiguilles
-                    # d'une montre) (car l'angle 'tab_angle_pi' a été modulo Pi après qu'il était généré)
-                    # Attention, chaque élément dans 'ligne' est en type de 'np.array' qui contient deux éléments
-                    angle_ligne_R.append(ligne[0])
-                else:
-                    # 反之为逆方向（顺时针）
-                    # Sinon, c'est le sens des aiguilles d'une montre
-                    angle_ligne_R.append(ligne[0] - 2 * math.pi)
-
-                # 为这一行随后（从左到右）每个角度计算相对于前一个角度的实际偏移量
-                # Calculer le biais réel de chaque point suivant par rapport au son point précédent
-                for i in range(1, width):
-                    # 计算偏移量的绝对值
-                    # Calculer la valeur absolue du biais
-                    diff = abs(ligne[i] - ligne[i - 1])
-                    # 判断偏移是否导致真实值超越arctan的定义域边界
-                    # Déterminer si ce biais contuit que la valeur réelle de l'angle passe (la multiplication de) le
-                    # bord de l'ensemble de definition de arctan
-                    if diff > math.pi:
-                        # 如果大于Pi，则说明偏移导致真实角度突破arctan的定义域边界，则真实的偏移角度应该是2*Pi - diff
-                        # Si la valeur > Pi, alors le biais constuit le passage, le biais réel doit être 2*Pi - diff
-                        diff = 2 * math.pi - diff
-                        # 只有两种突破边界的情况：
-                        # il n'existe que deux cas du passer le bord:
-                        if ligne[i] >= ligne[i - 1]:
-                            # 上一个角度大于但接近0，下一个角度（反方向）顺时针偏移后为负角度，取模后变成接近pi的角度
-                            # l'angle précédent est proche à 0 (mod 2*Pi), l'angle suivant est dans le sens
-                            # trigonométrique, et devient proche à Pi après modulo.
-                            angle_ligne_R.append(angle_ligne_R[i - 1] - diff)
-                        else:
-                            # 上一个角度接近2*pi，下一个角度（正方向）逆时针偏移后超过pi，取模后变成接近0的角度
-                            # l'angle précédent est et proche à 2*Pi (mod 2*Pi), l'angle suivant est dans le sens des
-                            # aiguilles d'une montre, et devient proche à 0 après modulo.
-                            angle_ligne_R.append(angle_ligne_R[i - 1] + diff)
-                    else:
-                        if ligne[i] >= ligne[i - 1]:
-                            # 下一个角度比上一个角度大，（正方向）逆时针偏移
-                            # l'angle suivant est plus grand que le précédent, le biais dans le sens trigonométrique
-                            angle_ligne_R.append(angle_ligne_R[i - 1] + diff)
-                        else:
-                            # 下一个角度比上一个角度小，（反方向）顺时针偏移
-                            # l'angle suivant est plus petit que le précédent, le biais dans le sens des aiguilles
-                            # d'une montre
-                            angle_ligne_R.append(angle_ligne_R[i - 1] - diff)
-                # 将当前行储存
-                # Enregistrer cette ligne courante
-                tab_angle_R.append(angle_ligne_R)
-            return tab_angle_R
+                ligne_R = [ligne[0]]
+                for angle in ligne[1:]:
+                    prec = ligne_R[-1]
+                    ligne_R.append(prec + modulo_2pi(angle - prec))
+                tab_R.append(ligne_R)
+            return np.array(tab_R)
 
         tab_angles_x_R = corrigeur(tab_angles_x_2pi)
         tab_angles_y_R = corrigeur(tab_angles_y_2pi.T)
 
-        # tab_angles_x_R, tab_angles_y_R=tab_angles_x_2pi,tab_angles_y_2pi.T
-        self._tab_angles_R[3] = tab_angles_x_R, tab_angles_y_R
+        self._tab_angles_R[3] = np.array(tab_angles_x_R), np.array(tab_angles_y_R)
         return self._tab_angles_R[3]
+
+    def simulation(self, tab_angles_R, t0=-1, t1=1, taille=50):
+        tab_x, tab_y = np.array(tab_angles_R[0]), np.array(tab_angles_R[1])
+        pas = (t1 - t0) / (taille - 1)
+        axe = np.linspace(t0, t1, taille)
+
+        def tracer(tab_angles):
+            tab_points = []
+            for i in range(taille):
+                ligne_points = [axe[i]]
+                for angle in tab_angles[i][:-1]:
+                    ligne_points.append(math.tan(angle) * pas)
+                tab_points.append(ligne_points)
+            return tab_points
+
+        self._simulation = tracer(tab_x), tracer(tab_y.T)
+        return self._simulation
+
+    def simulation2(self, t0=-1, t1=1, taille=50):
+        angles_x, angles_y = self.tab_angles_R(t0, t1, taille)
+        pas = (t1 - t0) / (taille - 1)
+        pass
+
+    def draw_sim(self, tab_angles_R, t0=-1, t1=1, taille=50):
+        tab_x, tab_y = self.simulation(tab_angles_R, t0, t1, taille)
+        axe = np.linspace(t0, t1, taille)
+        for i in range(taille):
+            plt.plot([axe[i]] * taille, tab_x[i])
+        plt.show()
 
 
 def f_ex(a, b, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
@@ -350,18 +328,19 @@ def f_ex2(a, b, _theta, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
 
 """ Zone de tester le code"""
 x, y = sp.symbols("x y")
-le_t0, le_t1, la_taille = -1, 1, 500
-ex = fonc_diff_infini(f_ex2(0.2, 5, 5 * math.pi)[0])
-### expr = x + 0.45 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.2 * sp.exp(-10 * (x ** 2 + y ** 2))
-### ex = fonc_diff_infini(expr)
-# print(ex.sym())
+le_t0, le_t1, la_taille = -1, 1, 50
+ex = fonc_diff_infini(f_ex2(0.2, 5, 10 * math.pi)[0])
+#expr = x + 0.45 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.2 * sp.exp(-10 * (x ** 2 + y ** 2))
+#ex = fonc_diff_infini(expr)
+print(ex.sym())
 # print(ex.num())
 # print(ex.f(0, 0))
-# print(ex.df_sym())
+print(ex.df_sym())
 # print(ex.df(0, 0))
 ex.draw()
 # ex.draw('h')
 # ex.draw('v')
+# ex.draw_new()
 # print(ex.tab_df())
 # ex.draw_df()
 # ex.draw_df('h')
@@ -370,9 +349,12 @@ ex.draw_all('h')
 ex.draw_all('v')
 # print(ex.tab_df(le_t0, le_t0, la_taille))
 print(ex.tab_angles_R(-le_t0, le_t1, la_taille))
+# ex.simulation(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
+# ex.draw_sim_h(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
+
 
 plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[0][la_taille // 2])
-my_y_ticks = np.arange(-math.pi, 1.5 * math.pi, 0.25 * math.pi)
+my_y_ticks = np.arange(-2*math.pi, 1.5 * math.pi, 0.25 * math.pi)
 plt.yticks(my_y_ticks)
 plt.title("direction x")
 plt.xlabel("x")
@@ -380,7 +362,7 @@ plt.ylabel('$\Theta$')
 plt.show()
 
 plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[1][la_taille // 2])
-my_y_ticks = np.arange(-math.pi, 1.5 * math.pi, 0.25 * math.pi)
+my_y_ticks = np.arange(-2*math.pi, 1.5 * math.pi, 0.25 * math.pi)
 plt.yticks(my_y_ticks)
 plt.title("direction y")
 plt.xlabel("y")
