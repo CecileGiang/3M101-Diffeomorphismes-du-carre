@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as anime
 import sympy as sp
 from IPython import display
 import scipy
@@ -173,7 +174,7 @@ class fonc_diff_infini:
         :param taille:
         :return:
         """
-        tab_x,tab_y=self.tab_f(t0, t1, taille)
+        tab_x, tab_y = self.tab_f(t0, t1, taille)
         tab_df = self.tab_df(t0, t1, taille)
         if direction == 'h':
             plt.quiver(tab_x, tab_y, tab_df[0][0], tab_df[1][0])
@@ -187,7 +188,7 @@ class fonc_diff_infini:
             plt.show()
         else:
             plt.quiver(tab_x, tab_y, tab_df[0][0], tab_df[1][0])
-            plt.quiver(tab_x.T, tab_y.T, tab_df[0][1], tab_df[1][1])
+            plt.quiver(tab_x, tab_y, tab_df[0][1], tab_df[1][1])
             plt.xlabel(r'$x_1$ et $y_1$')
             plt.ylabel(r'$x_2$ et $y_2$')
             plt.show()
@@ -246,33 +247,51 @@ class fonc_diff_infini:
         self._tab_angles_R[3] = np.array(tab_angles_x_R), np.array(tab_angles_y_R)
         return self._tab_angles_R[3]
 
-    def simulation(self, tab_angles_R, t0=-1, t1=1, taille=50):
-        tab_x, tab_y = np.array(tab_angles_R[0]), np.array(tab_angles_R[1])
-        pas = (t1 - t0) / (taille - 1)
+    def draw_angles_ligne(self, direction, display=True, t0=-1, t1=1, taille=50, indice=None, val_min=None,
+                          val_max=None):
+        if direction == 'h':
+            case = 0
+            direction_str = "ligne"
+        else:
+            case = 1
+            direction_str = "colonne"
+        ind = indice
+        if ind is None:
+            ind = taille // 2
+        v_min, v_max = val_min, val_max
+        tick = 0.25 * math.pi
+        tab = ex.tab_angles_R(t0, t1, taille)[case][ind]
+        if v_min is None:
+            v_min = (min(tab) // tick - 1) * tick
+        if v_max is None:
+            v_max = (max(tab) // tick + 2) * tick
         axe = np.linspace(t0, t1, taille)
+        plt.title("Angles de la ${}-ieme$ {}".format(ind, direction_str))
+        my_y_ticks = np.arange(v_min, v_max, tick)
+        plt.yticks(my_y_ticks)
+        plt.xlabel("x")
+        plt.ylabel('$\Theta$')
+        res = plt.plot(axe, tab)
+        if display:
+            plt.show()
+        return res
 
-        def tracer(tab_angles):
-            tab_points = []
-            for i in range(taille):
-                ligne_points = [axe[i]]
-                for angle in tab_angles[i][:-1]:
-                    ligne_points.append(math.tan(angle) * pas)
-                tab_points.append(ligne_points)
-            return tab_points
-
-        self._simulation = tracer(tab_x), tracer(tab_y.T)
-        return self._simulation
-
-    def simulation2(self, t0=-1, t1=1, taille=50):
-        angles_x, angles_y = self.tab_angles_R(t0, t1, taille)
-        pas = (t1 - t0) / (taille - 1)
-        pass
-
-    def draw_sim(self, tab_angles_R, t0=-1, t1=1, taille=50):
-        tab_x, tab_y = self.simulation(tab_angles_R, t0, t1, taille)
-        axe = np.linspace(t0, t1, taille)
+    def play_angles(self, direction, t0=-1, t1=1, taille=50):
+        fig = plt.figure()
+        if direction == 'h':
+            case = 0
+        else:
+            case = 1
+        tab = np.array(self.tab_angles_R(t0, t1, taille)[case])
+        tick = 0.25 * math.pi
+        val_min = (tab.min() // tick - 1) * tick
+        val_max = (tab.max() // tick + 2) * tick
+        tab_fig=[]
         for i in range(taille):
-            plt.plot([axe[i]] * taille, tab_x[i])
+            tab_fig.append(self.draw_angles_ligne(direction, False, t0, t1, taille, i, val_min, val_max))
+        im_ani = anime.ArtistAnimation(fig, tab_fig, interval=50, repeat_delay=3000,
+                                       blit=True)
+        im_ani.save("animation.html")
         plt.show()
 
 
@@ -324,8 +343,8 @@ def f_ex2(a, b, _theta, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
 x, y = sp.symbols("x y")
 le_t0, le_t1, la_taille = -1, 1, 50
 ex = fonc_diff_infini(f_ex2(0.2, 5, 5 * math.pi)[0])
-#expr = x + 0.45 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.2 * sp.exp(-10 * (x ** 2 + y ** 2))
-#ex = fonc_diff_infini(expr)
+# expr = x + 0.45 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.2 * sp.exp(-10 * (x ** 2 + y ** 2))
+# ex = fonc_diff_infini(expr)
 # print(ex.sym())
 # print(ex.num())
 # print(ex.f(0, 0))
@@ -345,33 +364,13 @@ ex.draw_all('v')
 # print(ex.tab_angles_R(-le_t0, le_t1, la_taille))
 # ex.simulation(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
 # ex.draw_sim_h(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
-
-"""
-for i in range(la_taille):
-    l = np.linspace(le_t0, le_t1, la_taille)
-    plt.plot(l, ex.tab_angles_R(le_t0, le_t1, la_taille)[0][i])
-    my_y_ticks = np.arange(-math.pi, 2.25 * math.pi, 0.25 * math.pi)
-    plt.yticks(my_y_ticks)
-plt.title("direction x")
-plt.xlabel("x")
-plt.ylabel('$\Theta$')
-plt.show()
+# ex.draw_angles_ligne('h')
+ex.play_angles('h')
 """
 
 """
-fig  = plt.figure()
-nt = 50
-l=np.linspace(le_t0, le_t1, la_taille)
-for i in range(nt):
-    plt.cla()
-    t = i*Tmax/nt
-    u = u0(x-c*t)
-    plt.plot(x,u)
-    plt.xlabel('x')
-    plt.ylabel('u(x)')
-    plt.title('t =%1.2f' %t)
-    display.clear_output(wait=True)
-    display.display(plt.gcf())
+"""
+
 """
 """
 plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[1][la_taille // 2])
