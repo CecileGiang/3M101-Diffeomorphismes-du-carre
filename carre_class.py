@@ -2,6 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sp
+from IPython import display
 import scipy
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.misc import derivative
@@ -138,13 +139,6 @@ class fonc_diff_infini:
             self.draw_v(t0, t1, taille)
             plt.show()
 
-    def draw_new(self, t0=-1, t1=1, taille=50):
-        axe_x, axe_y = self.plan(t0, t1, taille)
-        tab_x, tab_y = self.f(axe_x, axe_y)
-        plt.plot(tab_x.T, tab_y.T)
-        plt.plot(tab_x, tab_y)
-        plt.show()
-
     def tab_df(self, t0=-1, t1=1, taille=50):
         """
         En utilisant un plan feuillage par numpy.meshgrid, on symplifie le code pour calculer un tableau de matrice
@@ -179,21 +173,21 @@ class fonc_diff_infini:
         :param taille:
         :return:
         """
-        axe_x, axe_y = self.plan(t0, t1, taille)
+        tab_x,tab_y=self.tab_f(t0, t1, taille)
         tab_df = self.tab_df(t0, t1, taille)
         if direction == 'h':
-            plt.quiver(axe_x, axe_y, tab_df[0][0], tab_df[1][0])
+            plt.quiver(tab_x, tab_y, tab_df[0][0], tab_df[1][0])
             plt.xlabel(r'$x_1$')
             plt.ylabel(r'$x_2$')
             plt.show()
         elif direction == 'v':
-            plt.quiver(axe_x, axe_y, tab_df[0][1], tab_df[1][1])
+            plt.quiver(tab_x, tab_y, tab_df[0][1], tab_df[1][1])
             plt.xlabel(r'$y_1$')
             plt.ylabel(r'$y_2$')
             plt.show()
         else:
-            plt.quiver(axe_x, axe_y, tab_df[0][0], tab_df[1][0])
-            plt.quiver(axe_x, axe_y, tab_df[0][1], tab_df[1][1])
+            plt.quiver(tab_x, tab_y, tab_df[0][0], tab_df[1][0])
+            plt.quiver(tab_x.T, tab_y.T, tab_df[0][1], tab_df[1][1])
             plt.xlabel(r'$x_1$ et $y_1$')
             plt.ylabel(r'$x_2$ et $y_2$')
             plt.show()
@@ -225,8 +219,8 @@ class fonc_diff_infini:
             self._tab_angles_R[:3] = [t0, t1, taille]
 
         tab_df = self.tab_df(t0, t1, taille)
-        tab_angles_x_2pi = np.arctan2(tab_df[0][0], tab_df[1][0])
-        tab_angles_y_2pi = np.arctan2(tab_df[0][1], tab_df[1][1])
+        tab_angles_x_2pi = np.arctan2(tab_df[1][0], tab_df[0][0])
+        tab_angles_y_2pi = np.arctan2(tab_df[1][1], tab_df[0][1])
 
         def modulo_2pi(x):
             y = x
@@ -329,42 +323,62 @@ def f_ex2(a, b, _theta, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
 """ Zone de tester le code"""
 x, y = sp.symbols("x y")
 le_t0, le_t1, la_taille = -1, 1, 50
-ex = fonc_diff_infini(f_ex2(0.2, 5, 10 * math.pi)[0])
+ex = fonc_diff_infini(f_ex2(0.2, 5, 5 * math.pi)[0])
 #expr = x + 0.45 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.2 * sp.exp(-10 * (x ** 2 + y ** 2))
 #ex = fonc_diff_infini(expr)
-print(ex.sym())
+# print(ex.sym())
 # print(ex.num())
 # print(ex.f(0, 0))
-print(ex.df_sym())
+# print(ex.df_sym())
 # print(ex.df(0, 0))
-ex.draw()
+# ex.draw()
 # ex.draw('h')
 # ex.draw('v')
 # ex.draw_new()
 # print(ex.tab_df())
 # ex.draw_df()
-# ex.draw_df('h')
-# ex.draw_df('v')
+ex.draw_df('h')
+ex.draw_df('v')
 ex.draw_all('h')
 ex.draw_all('v')
 # print(ex.tab_df(le_t0, le_t0, la_taille))
-print(ex.tab_angles_R(-le_t0, le_t1, la_taille))
+# print(ex.tab_angles_R(-le_t0, le_t1, la_taille))
 # ex.simulation(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
 # ex.draw_sim_h(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
 
-
-plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[0][la_taille // 2])
-my_y_ticks = np.arange(-2*math.pi, 1.5 * math.pi, 0.25 * math.pi)
-plt.yticks(my_y_ticks)
+"""
+for i in range(la_taille):
+    l = np.linspace(le_t0, le_t1, la_taille)
+    plt.plot(l, ex.tab_angles_R(le_t0, le_t1, la_taille)[0][i])
+    my_y_ticks = np.arange(-math.pi, 2.25 * math.pi, 0.25 * math.pi)
+    plt.yticks(my_y_ticks)
 plt.title("direction x")
 plt.xlabel("x")
 plt.ylabel('$\Theta$')
 plt.show()
+"""
 
+"""
+fig  = plt.figure()
+nt = 50
+l=np.linspace(le_t0, le_t1, la_taille)
+for i in range(nt):
+    plt.cla()
+    t = i*Tmax/nt
+    u = u0(x-c*t)
+    plt.plot(x,u)
+    plt.xlabel('x')
+    plt.ylabel('u(x)')
+    plt.title('t =%1.2f' %t)
+    display.clear_output(wait=True)
+    display.display(plt.gcf())
+"""
+"""
 plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[1][la_taille // 2])
-my_y_ticks = np.arange(-2*math.pi, 1.5 * math.pi, 0.25 * math.pi)
+my_y_ticks = np.arange(-math.pi, 2.25 * math.pi, 0.25 * math.pi)
 plt.yticks(my_y_ticks)
 plt.title("direction y")
 plt.xlabel("y")
 plt.ylabel('$\Theta$')
 plt.show()
+"""
