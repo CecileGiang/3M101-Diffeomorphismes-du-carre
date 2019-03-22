@@ -248,8 +248,8 @@ class fonc_diff_infini:
         self._tab_angles_R[3] = np.array(tab_angles_x_R), np.array(tab_angles_y_R)
         return self._tab_angles_R[3]
 
-    def draw_angles_ligne(self, direction, display=True, t0=-1, t1=1, taille=50, indice=None, val_min=None,
-                          val_max=None):
+    def draw_angles_ligne(self, direction, t0=-1, t1=1, taille=50, indice=None, val_min=None, val_max=None,
+                          display=True):
         if direction == 'h':
             case = 0
             direction_str = "ligne"
@@ -289,7 +289,7 @@ class fonc_diff_infini:
         val_max = (tab.max() // tick + 2) * tick
         tab_fig = []
         for i in range(taille):
-            tab_fig.append(self.draw_angles_ligne(direction, False, t0, t1, taille, i, val_min, val_max))
+            tab_fig.append(self.draw_angles_ligne(direction, t0, t1, taille, i, val_min, val_max, False))
         im_ani = anime.ArtistAnimation(fig, tab_fig, interval=50, repeat_delay=3000, blit=True)
         if bsave:
             name = save_name
