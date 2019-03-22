@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as anime
 import sympy as sp
-from IPython import display
 import scipy
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.misc import derivative
@@ -111,15 +110,7 @@ class fonc_diff_infini:
         """
         return self.df_num()(x_num, y_num)
 
-    def draw_h(self, t0=-1, t1=1, taille=50):
-        tab_x, tab_y = self.tab_f(t0, t1, taille)
-        plt.plot(tab_x.T, tab_y.T)
-
-    def draw_v(self, t0=-1, t1=1, taille=50):
-        tab_x, tab_y = self.tab_f(t0, t1, taille)
-        plt.plot(tab_x, tab_y)
-
-    def draw(self, direction='a', t0=-1, t1=1, taille=50):
+    def draw(self, direction='a', t0=-1, t1=1, taille=50, display=True):
         """
         Afficher le diffeomorphisme par une image en 2D
         :param direction: soit 'h' pour la direction horientale, soit 'v' pour la direction verticale, soit l'autre pour
@@ -129,15 +120,18 @@ class fonc_diff_infini:
         :param taille:
         :return:
         """
+        tab_x, tab_y = self.tab_f(t0, t1, taille)
         if direction == 'h':
-            self.draw_h(t0, t1, taille)
-            plt.show()
+            plt.title("Diffeomorphisme dans la direction horientale")
+            plt.plot(tab_x.T, tab_y.T)
         elif direction == 'v':
-            self.draw_v(t0, t1, taille)
-            plt.show()
+            plt.title("Diffeomorphisme dans la direction verticale")
+            plt.plot(tab_x, tab_y)
         else:
-            self.draw_h(t0, t1, taille)
-            self.draw_v(t0, t1, taille)
+            plt.title("Diffeomorphisme")
+            plt.plot(tab_x.T, tab_y.T)
+            plt.plot(tab_x, tab_y)
+        if display:
             plt.show()
 
     def tab_df(self, t0=-1, t1=1, taille=50):
@@ -165,7 +159,7 @@ class fonc_diff_infini:
         self._tab_df[3] = self._df_num(axe_x, axe_y)
         return self._tab_df[3]
 
-    def draw_df(self, direction='a', t0=-1, t1=1, taille=50):
+    def draw_df(self, direction='a', t0=-1, t1=1, taille=50, display=True):
         """
         Afficher le champ de vecteurs pour un diffeomorphisme, les autres sont parailles que draw
         :param direction:
@@ -180,20 +174,22 @@ class fonc_diff_infini:
             plt.quiver(tab_x, tab_y, tab_df[0][0], tab_df[1][0])
             plt.xlabel(r'$x_1$')
             plt.ylabel(r'$x_2$')
-            plt.show()
+            plt.title("Champ de vecteurs horientals")
         elif direction == 'v':
             plt.quiver(tab_x, tab_y, tab_df[0][1], tab_df[1][1])
             plt.xlabel(r'$y_1$')
             plt.ylabel(r'$y_2$')
-            plt.show()
+            plt.title("Champ de vecteurs verticals")
         else:
             plt.quiver(tab_x, tab_y, tab_df[0][0], tab_df[1][0])
             plt.quiver(tab_x, tab_y, tab_df[0][1], tab_df[1][1])
             plt.xlabel(r'$x_1$ et $y_1$')
             plt.ylabel(r'$x_2$ et $y_2$')
+            plt.title("Champ de vecteurs")
+        if display:
             plt.show()
 
-    def draw_all(self, direction='a', t0=-1, t1=1, taille=50):
+    def draw_all(self, direction='a', t0=-1, t1=1, taille=50, display=True):
         """
         Pour un diffeomorphisme, afficher une fois lui-meme et son champ de vecteurs en une figure, les aures sont
         parailles que draw et que draw_df
@@ -204,13 +200,18 @@ class fonc_diff_infini:
         :return:
         """
         if direction == 'h':
-            self.draw_h(t0, t1, taille)
+            self.draw('h', t0, t1, taille, False)
+            title = "Diffeomorphisme et son champ de vecteurs dans le sens horiental"
         elif direction == 'v':
-            self.draw_v(t0, t1, taille)
+            self.draw('v', t0, t1, taille, False)
+            title = "Diffeomorphisme et son champ de vecteurs dans le sens vertical"
         else:
-            self.draw_h(t0, t1, taille)
-            self.draw_v(t0, t1, taille)
-        self.draw_df(direction, t0, t1, taille)
+            self.draw('a', t0, t1, taille, False)
+            title = "Diffeomorphisme et son champ de vecteurs"
+        self.draw_df(direction, t0, t1, taille, False)
+        plt.title(title)
+        if display:
+            plt.show()
 
     def tab_angles_R(self, t0=-1, t1=1, taille=50):
         if [t0, t1, taille] == self._tab_angles_R[:3]:
@@ -242,7 +243,7 @@ class fonc_diff_infini:
             return np.array(tab_R)
 
         tab_angles_x_R = corrigeur(tab_angles_x_2pi)
-        tab_angles_y_R = corrigeur(tab_angles_y_2pi.T)
+        tab_angles_y_R = corrigeur(tab_angles_y_2pi.T) - math.pi / 2
 
         self._tab_angles_R[3] = np.array(tab_angles_x_R), np.array(tab_angles_y_R)
         return self._tab_angles_R[3]
@@ -276,7 +277,7 @@ class fonc_diff_infini:
             plt.show()
         return res
 
-    def play_angles(self, direction, t0=-1, t1=1, taille=50):
+    def play_angles(self, direction, t0=-1, t1=1, taille=50, bsave=True, save_name=None):
         fig = plt.figure()
         if direction == 'h':
             case = 0
@@ -286,13 +287,16 @@ class fonc_diff_infini:
         tick = 0.25 * math.pi
         val_min = (tab.min() // tick - 1) * tick
         val_max = (tab.max() // tick + 2) * tick
-        tab_fig=[]
+        tab_fig = []
         for i in range(taille):
             tab_fig.append(self.draw_angles_ligne(direction, False, t0, t1, taille, i, val_min, val_max))
-        im_ani = anime.ArtistAnimation(fig, tab_fig, interval=50, repeat_delay=3000,
-                                       blit=True)
-        im_ani.save("animation.html")
-        plt.show()
+        im_ani = anime.ArtistAnimation(fig, tab_fig, interval=50, repeat_delay=3000, blit=True)
+        if bsave:
+            name = save_name
+            if name is None:
+                name = "animation"
+            im_ani.save(name + ".html")
+        return im_ani
 
 
 def f_ex(a, b, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
@@ -350,34 +354,18 @@ ex = fonc_diff_infini(f_ex2(0.2, 5, 5 * math.pi)[0])
 # print(ex.f(0, 0))
 # print(ex.df_sym())
 # print(ex.df(0, 0))
-# ex.draw()
+ex.draw()
 # ex.draw('h')
 # ex.draw('v')
-# ex.draw_new()
 # print(ex.tab_df())
 # ex.draw_df()
-ex.draw_df('h')
-ex.draw_df('v')
+# ex.draw_df('h')
+# ex.draw_df('v')
+# ex.draw_all()
 ex.draw_all('h')
 ex.draw_all('v')
 # print(ex.tab_df(le_t0, le_t0, la_taille))
 # print(ex.tab_angles_R(-le_t0, le_t1, la_taille))
-# ex.simulation(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
-# ex.draw_sim_h(ex._tab_angles_R[3], le_t0, le_t1, la_taille)
-# ex.draw_angles_ligne('h')
-ex.play_angles('h')
-"""
-
-"""
-"""
-
-"""
-"""
-plt.plot(np.linspace(le_t0, le_t1, la_taille), ex.tab_angles_R(le_t0, le_t1, la_taille)[1][la_taille // 2])
-my_y_ticks = np.arange(-math.pi, 2.25 * math.pi, 0.25 * math.pi)
-plt.yticks(my_y_ticks)
-plt.title("direction y")
-plt.xlabel("y")
-plt.ylabel('$\Theta$')
-plt.show()
-"""
+ex.draw_angles_ligne('h')
+ex.draw_angles_ligne('v')
+ani = ex.play_angles('h')
