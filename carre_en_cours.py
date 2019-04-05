@@ -47,7 +47,7 @@ ie que les bords sont invariants par la fonction. Nous la prendrons gaussienne, 
 Notre fonction f sera telle que f(x,y) = (f1(x,y),f2(x,y)).
 '''
 
-def define_f(alpha=0.2,beta=0.45):
+def define_f(alpha=0.045,beta=0.2):
     """
     Définition: float*float -> python_function*sympy_expression
     Définit f notre C_inf-difféomorphisme de [-1,1]² dans [-1,1]².
@@ -57,7 +57,7 @@ def define_f(alpha=0.2,beta=0.45):
     sous deux formes: celle d'une fonction standard python et d'une expression sympy
     """
     #Définit la fonction python f
-    def f(x_,y_,alpha=0.2,beta=0.45):
+    def f(x_,y_):
         
         def f1(x_,y_):
             return x_+beta*np.exp(-15*(x_**2+y_**2))
@@ -149,7 +149,7 @@ def grille_diff(f_expr,eps=0.05,show=True):
     
     Fh_diff=Fh.copy()
     Fv_diff=Fv.copy()
-
+    
     for ligne_h in Fh_diff: #y fixés
         ligne_h = [evaluate_f(f_expr,p[0],p[1]) for p in ligne_h]        
         
@@ -162,7 +162,7 @@ def grille_diff(f_expr,eps=0.05,show=True):
                 Y.append(ligne_h[i][1])
             
             plt.plot(X,Y)
-        
+    
     for ligne_v in Fv: #x fixés
         ligne_v = [evaluate_f(f_expr,p[0],p[1]) for p in ligne_v]
         
@@ -381,7 +381,7 @@ def angle_bis(Vh,Vv):
     Ah=[]
     Av=[]
     #Calcul d'angles pour les vecteurs de Vh -feuilletage horizontal
-    for ligne_h in Vh:
+    for ligne_h in Vh:from s ci p y . i n t e g r a t e import o d ei n t
         ah=[(math.atan2(ligne_h[0][0],ligne_h[0][1]))] #angle du 1er vecteur de la ligne
         for v in ligne_h[1:]:
             angle_h=math.atan2(v[0],v[1])
@@ -440,6 +440,8 @@ def angle_bis(Vh,Vv):
         Ah.append(ah)
         
     """
+    
+    """
     for ligne_h in Vh:
         ah=[]
         #test sur le 1er angles de la ligne
@@ -467,36 +469,104 @@ def angle_bis(Vh,Vv):
                     ah.append(ah[-1]-diff)
                     
         Ah.append(ah)
+    """
+    
+    def modulo_2pi(angle):
+        new_angle=angle
+        while new_angle>math.pi:
+            new_angle -= 2*math.pi
+        while new_angle < -math.pi:
+            new_angle += 2*math.pi
+        return new_angle
+    
+    #Calcul d'angles pour les vecteurs de Vh -feuilletage horizontal
+    for ligne_h in Vh:
+        #ah=[]
+        #test sur le 1er angles de la ligne
+        a0=math.atan2(ligne_h[0][1],ligne_h[0][0]) #angle du 1er vecteur de la ligne modulo 2*pi
+        ah=[a0]
+        #Calcul des angles pour le reste des vecteurs de la ligne
+        for v in ligne_h[1:]:
+            angle_h=math.atan2(v[1],v[0]) #angle brut calculé avec atan2
+            #À RAJOUTER: rendre les angles réels
+            diff=modulo_2pi(angle_h-ah[-1]) #différence entre les deux angles modulo 2*pi
+            ah.append(ah[-1]+diff)
+        Ah.append(ah)
         
     #Calcul d'angles pour les vecteurs de Vv -feuilletage vertical
     for ligne_v in Vv:
-        av=[]
+        #av=[]
         #test sur le 1er angles de la ligne
-        a0=math.atan2(ligne_v[0][0],ligne_v[0][1])%(2*math.pi) #angle du 1er vecteur de la ligne modulo 2*pi
-        if a0 < math.pi:
-            av.append(a0)
-        else:
-            av.append(a0-2*math.pi)
+        a0=math.atan2(ligne_v[0][1],ligne_v[0][0]) #angle du 1er vecteur de la ligne modulo 2*pi
+        av=[a0]
         #Calcul des angles pour le reste des vecteurs de la ligne
         for v in ligne_v[1:]:
-            angle_v=math.atan2(v[0],v[1]) #angle brut calculé avec atan2
-            angle_v_modulo=angle_v%(2*math.pi) #angle modulo 2*pi qui servira pour calculer la différence avec l'angle précédent
+            angle_v=math.atan2(v[1],v[0]) #angle brut calculé avec atan2
             #À RAJOUTER: rendre les angles réels
-            diff=math.fabs(angle_v_modulo-av[-1]%(2*math.pi)) #différence entre les deux angles modulo 2*pi
-            if diff>math.pi:
-                diff=2*math.pi-diff 
-                if angle_v_modulo>=av[-1]%(2*math.pi):
-                    av.append(av[-1]-diff)
-                else:
-                    av.append(av[-1]+diff)
-            else:
-                if angle_v_modulo>=av[-1]%(2*math.pi):
-                    av.append(av[-1]+diff)
-                else:
-                    av.append(av[-1]-diff)
+            diff=modulo_2pi(angle_v-av[-1]) #différence entre les deux angles modulo 2*pi
+            av.append(av[-1]+diff)
         Av.append(av)
         
     Ah=np.asarray(Ah)
     Av=np.array(Av)
 
     return Ah,Av
+
+
+"""
+########################################## PROBLÈME POUR CETTE FONCTION ##########################################
+"""
+
+def plot_from_angles_Av(Av,eps=0.05):
+    X=np.arange(-1,1+eps,eps)
+    for i in range(len(X)):
+        av=Av[i]
+        Y=[X[i]+math.tan(av[0]*eps)]
+        for angle in av[1:]:
+            Y.append(Y[-1]+math.tan(angle)*eps)
+        plt.plot(X,Y)
+    return
+
+from scipy.integrate import odeint
+
+"""
+def integrate(vv,eps=0.05):
+    tps=np.linspace(-1,1+eps,eps)
+    y_init=vv[0]
+    y=odeint(vv[1:],y_init,tps)
+    plt.figure()
+    plt.plot(tps,y[:,0])
+     
+    
+    return
+"""
+
+
+
+
+def euler(f_expr,df): #df le pas
+    """
+    Définition: Implémente la méthode d'Euler pour intégrer notre champ de vecteurs.
+    """
+    
+    #Construction de la grille du difféomorphisme
+    Fh,Fv = grille_diff(f_expr)
+    
+    #Construction du champ de vecteurs associé
+    Vh,Vv = champ_vecteur_bis(f_expr)
+    
+    #Construction de la liste des angles horizontal et vertocal pour chaque point
+    Ah,Av = angle_bis(Vh,Vv)
+    
+    #Chaque point de la grille apparaît à la fois dans le feuilletage horizontal et vertical
+    #On se fixe maintenant au feuilletage horizontal
+    X=[]
+    for i in range(len(Fh)):
+        ligne_p=Fh[i]
+        ligne_X=[ligne_p[0]]
+        for j in range(len(ligne_p[1:])):
+            x,y = ligne_p[0]
+            ligne_X.append(ligne_X[-1]+df*np.array([math.cos(Ah[i][j]),math.sin(Ah[i][j])]))
+        X.append(ligne_X)
+    
+    return X
