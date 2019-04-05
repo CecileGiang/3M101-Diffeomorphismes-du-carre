@@ -544,13 +544,13 @@ def integrate(vv,eps=0.05):
 
 
 
-def euler(f_expr,df): #df le pas
+def euler(f_expr,eps,df): #eps la précision de la grille, df le pas
     """
     Définition: Implémente la méthode d'Euler pour intégrer notre champ de vecteurs.
     """
     
     #Construction de la grille du difféomorphisme
-    Fh,Fv = grille_diff(f_expr)
+    Fh,Fv = grille_diff(f_expr,show=False)
     
     #Construction du champ de vecteurs associé
     Vh,Vv = champ_vecteur_bis(f_expr)
@@ -560,13 +560,104 @@ def euler(f_expr,df): #df le pas
     
     #Chaque point de la grille apparaît à la fois dans le feuilletage horizontal et vertical
     #On se fixe maintenant au feuilletage horizontal
-    X=[]
-    for i in range(len(Fh)):
-        ligne_p=Fh[i]
-        ligne_X=[ligne_p[0]]
-        for j in range(len(ligne_p[1:])):
-            x,y = ligne_p[0]
-            ligne_X.append(ligne_X[-1]+df*np.array([math.cos(Ah[i][j]),math.sin(Ah[i][j])]))
-        X.append(ligne_X)
+    Xh=[] #liste des vecteurs X pour chaque ligne
+    Xv=[]
     
-    return X
+    for i in range(len(Fh)-1):
+        print('ligne n°',i)
+        ligne_p=Fh[i]
+        ligne_Xh=[ligne_p[0]]
+        for j in range(len(ligne_p[1:-1])):
+            x,y = ligne_p[j]
+            #print('point:',x,y)
+            
+            #Pour chaque point dans la ligne, on cherche le vecteur X correspondant en moyennant (avec pondération) les X des 4 points du feuilletage les plus proches
+            
+            ##Recherche des quatre points les plus proches: dans l'ordre A(1,0),A(0,0),A(1,1),A(0,1)
+            x_tmp,y_tmp = -1,-1
+            k,l = 0,0
+            print('len(Ah):',len(Ah))
+            while x_tmp<x and k<len(Ah)-2:
+                x_tmp = -1+k*eps
+                k+=1
+            while y_tmp<y and l<len(Ah)-2:
+                y_tmp = -1+l*eps
+                l+=1
+            
+            #print('k=',k,', l=',l)
+            #Au final
+            indices_proches=[(x_tmp+eps,y_tmp),(x_tmp,y_tmp),(x_tmp+eps,y_tmp+eps),(x_tmp,y_tmp+eps)]
+            #print('points les plus proches:',indices_proches)
+
+            t= abs(x-x_tmp)/eps #distance à l'abscisse du point inférieur le plus proche
+            s= abs(y-y_tmp)/eps #distance à l'ordonné du point inférieur le plus proche
+            print('k=,',k,', l=', l)
+            print('angles des points proches:',Ah[k+1,l],Ah[k,l],Ah[k+1,l+1],Ah[k,l+1])
+            angle=(1-t)*(s*Ah[k+1,l]+(1-s)*Ah[k,l])+t*(s*Ah[k+1,l+1]+(1-t)*(s*Ah[k,l+1]))
+            print('angle:',angle)
+            ligne_Xh.append(ligne_Xh[-1]+df*np.array([math.cos(angle),math.sin(angle)]))
+            #print('ligne_X=',ligne_X)
+        Xh.append(ligne_Xh)
+    
+    
+    
+    for i in range(len(Fv)-1):
+        print('ligne n°',i)
+        ligne_p=Fv[i]
+        ligne_Xv=[ligne_p[0]]
+        for j in range(len(ligne_p[1:-1])):
+            x,y = ligne_p[j]
+            #print('point:',x,y)
+            
+            #Pour chaque point dans la ligne, on cherche le vecteur X correspondant en moyennant (avec pondération) les X des 4 points du feuilletage les plus proches
+            
+            ##Recherche des quatre points les plus proches: dans l'ordre A(1,0),A(0,0),A(1,1),A(0,1)
+            x_tmp,y_tmp = -1,-1
+            k,l = 0,0
+            print('len(Ah):',len(Av))
+            while x_tmp<x and k<len(Av)-2:
+                x_tmp = -1+k*eps
+                k+=1
+            while y_tmp<y and l<len(Av)-2:
+                y_tmp = -1+l*eps
+                l+=1
+            
+            #print('k=',k,', l=',l)
+            #Au final
+            indices_proches=[(x_tmp+eps,y_tmp),(x_tmp,y_tmp),(x_tmp+eps,y_tmp+eps),(x_tmp,y_tmp+eps)]
+            #print('points les plus proches:',indices_proches)
+
+            t= abs(x-x_tmp)/eps #distance à l'abscisse du point inférieur le plus proche
+            s= abs(y-y_tmp)/eps #distance à l'ordonné du point inférieur le plus proche
+            print('k=,',k,', l=', l)
+            print('angles des points proches:',Av[k+1,l],Av[k,l],Av[k+1,l+1],Av[k,l+1])
+            angle=(1-t)*(s*Av[k+1,l]+(1-s)*Av[k,l])+t*(s*Av[k+1,l+1]+(1-t)*(s*Av[k,l+1]))
+            print('angle:',angle)
+            ligne_Xv.append(ligne_Xv[-1]+df*np.array([math.cos(angle),math.sin(angle)]))
+            #print('ligne_X=',ligne_X)
+        Xv.append(ligne_Xv)
+    
+    return Xh,Xv
+
+
+
+### Traçage
+
+f_expr=define_f()[1]
+Xh,Xv=euler(f_expr,0.05,0.05)
+
+
+
+for ligne_point in Xh:
+    for p in ligne_point:
+        X=[p[0] for p in ligne_point]
+        Y=[p[1] for p in ligne_point]
+        plt.plot(X,Y)
+
+
+
+for ligne_point in Xv:
+    for p in ligne_point:
+        X=[p[0] for p in ligne_point]
+        Y=[p[1] for p in ligne_point]
+        plt.plot(X,Y)
