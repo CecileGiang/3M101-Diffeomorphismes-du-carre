@@ -3,9 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as anime
 import sympy as sp
-import scipy
-from mpl_toolkits.mplot3d import Axes3D
-from scipy.misc import derivative
 
 
 class fonc_diff_infini:
@@ -19,8 +16,9 @@ class fonc_diff_infini:
         ex=fonc_diff_infini(expr,(x,y))
     """
 
-    def __init__(self, expr, vars_sym=(sp.symbols("x y"))):
+    def __init__(self, expr, expr_inv=None, vars_sym=(sp.symbols("x y"))):
         self._expr = expr
+        self._expr_inv = expr_inv
         self._x, self._y = vars_sym
         self._num = sp.lambdify((self._x, self._y), self._expr, "numpy")
         self._df_sym = None
@@ -245,7 +243,8 @@ class fonc_diff_infini:
         tab_angles_x_R = corrigeur(tab_angles_x_2pi)
         tab_angles_y_R = corrigeur(tab_angles_y_2pi.T) - math.pi / 2
 
-        self._tab_angles_R[3] = np.array(tab_angles_x_R), np.array(tab_angles_y_R)
+        # self._tab_angles_R[3] = np.array(tab_angles_x_R), np.array(tab_angles_y_R)
+        self._tab_angles_R[3] = np.array([tab_angles_x_R, tab_angles_y_R])
         return self._tab_angles_R[3]
 
     def draw_angles_ligne(self, direction, t0=-1, t1=1, taille=50, indice=None, val_min=None, val_max=None,
@@ -267,7 +266,7 @@ class fonc_diff_infini:
         if v_max is None:
             v_max = (max(tab) // tick + 2) * tick
         axe = np.linspace(t0, t1, taille)
-        plt.title("Angles de la ${}-ieme$ {}".format(ind, direction_str))
+        plt.title("Angles de la ${}-ieme$ {} sur {} en total".format(ind, direction_str, taille))
         my_y_ticks = np.arange(v_min, v_max, tick)
         plt.yticks(my_y_ticks)
         plt.xlabel("x")
@@ -297,6 +296,184 @@ class fonc_diff_infini:
                 name = "animation"
             im_ani.save(name + ".html")
         return im_ani
+
+    def _distance(self, x_, y_, tab_x_mesh, tab_y_mesh):
+        """
+        Pour chaque point dans l'ensemble donne (tab_x_mesh, tab_y_mesh), calculer la distance euclidienne entre lui et
+        le point (x_,y_)
+        :param x_:
+        :param y_:
+        :param tab_x_mesh:
+        :param tab_y_mesh:
+        :return:
+        """
+        tempx = tab_x_mesh - x_
+        tempy = tab_y_mesh - y_
+        tab_2d = []
+        for i in range(len(tab_x_mesh)):
+            tab_2d.append(np.sqrt(tempx[i] ** 2 + tempy[i] ** 2))
+        return np.array(tab_2d)
+
+    def _classifier_tab(self, tab_dis, tab_x_mesh, tab_y_mesh, pas, n):
+        """
+        Classier les points dans l'ensemble donne (tab_x_mesh, tab_y_mesh), par leur distance:
+        [0, pas/2) [pas/2, pas + pas/2) [pas + pas/2, 2*pas + pas/2) ... [(n-2)*pas + pas/2, (n-1)*pas + pas/2)
+        (>=(n-1)*pas + pas/2)
+        :param tab_dis: les distances des points dans (tab_x_mesh, tab_y_mesh):
+         tab_2d[i,j]->tab_x_mesh[i,j],tab_y_mesh[i,j]
+        :param tab_x_mesh:
+        :param tab_y_mesh:
+        :param pas: la distance entre deux points adjacents dans une meme ligne de la grille du plan [t0, t1]^2
+        :param n: le nombre des niveaux de classification
+        :return:
+        """
+        tab_res_x = [[] for i in range(n + 1)]
+        tab_res_y = [[] for i in range(n + 1)]
+        tab_dis_bis = (tab_dis - pas / 2) // pas + 1
+        for i in range(len(tab_dis_bis)):
+            for j in range(len(tab_dis_bis[i])):
+                niveau = int(tab_dis_bis[i, j])
+                if niveau >= n:
+                    tab_res_x[n].append(tab_x_mesh[i, j])
+                    tab_res_y[n].append(tab_y_mesh[i, j])
+                else:
+                    tab_res_x[niveau].append(tab_x_mesh[i, j])
+                    tab_res_y[niveau].append(tab_y_mesh[i, j])
+        return tab_res_x, tab_res_y
+
+    def _classifier_points_cles(self, tab_dis, tab_x_mesh, tab_y_mesh, pas, n):
+        tab_res_x = [[] for i in range(n + 1)]
+        tab_res_y = [[] for i in range(n + 1)]
+        tab_dis_bis = tab_dis // pas + 1
+        for i in range(len(tab_dis_bis)):
+            for j in range(len(tab_dis_bis[i])):
+                niveau = int(tab_dis_bis[i, j])
+                if tab_dis[i, j] >= pas / 2 + niveau * pas:
+                    niveau += 1
+                elif tab_dis[i, j] <= pas / 2 + (niveau - 1) * pas:
+                    niveau -= 1
+                if niveau >= n:
+                    tab_res_x[n].append(tab_x_mesh[i, j])
+                    tab_res_y[n].append(tab_y_mesh[i, j])
+                else:
+                    tab_res_x[niveau].append(tab_x_mesh[i, j])
+                    tab_res_y[niveau].append(tab_y_mesh[i, j])
+        return tab_res_x, tab_res_y
+
+    def tab_inverse(self, t0=-1, t1=1, taille=50, multi=10):
+        axe = np.linspace(t0, t1, taille)
+        axe_x, axe_y = np.meshgrid(axe, axe)
+        axe2 = np.linspace(t0, t1, taille * multi)
+        axe2_x, axe2_y = np.meshgrid(axe2, axe2)
+        f = self._num
+        ens_arrive_x, ens_arrive_y = f(axe2_x, axe2_y)
+
+        pas = (t1 - t0) / (taille - 1)
+        n = math.ceil((taille // 2) * math.sqrt(2))
+
+        def ajustement(x_, y_, tab_x_mesh, tab_y_mesh):
+            dis = np.inf
+            test = (pas ** 2) / 4
+            val_x, val_y = None, None
+            tab_x_new, tab_y_new = [], []
+            for i in range(len(tab_x_mesh)):
+                tempx, tempy = [], []
+                for j in range(len(tab_x_mesh[i])):
+                    x_ori, y_ori = tab_x_mesh[i, j], tab_y_mesh[i, j]
+                    fx, fy = f(x_ori, y_ori)
+                    d = (fx - x_) ** 2 + (fy - y_) ** 2
+                    if d < dis:
+                        dis = d
+                        val_x = x_ori
+                        val_y = y_ori
+                    if d >= test:
+                        tempx.append(x_ori)
+                        tempy.append(y_ori)
+                tab_x_new.append(tempx)
+                tab_y_new.append(tempy)
+            return val_x, val_y, tab_x_new, tab_y_new
+
+        tab_dis_cles = ex._distance(-1, -1, axe_x, axe_y)
+        class_x, class_y = ex._classifier_points_cles(tab_dis_cles, axe_x, axe_y, pas, n)
+        tab_dis = ex._distance(-1, -1, ens_arrive_x, ens_arrive_y)
+        tab_inv_x, tab_inv_y = ex._classifier_tab(tab_dis, axe2_x, axe2_y, pas, n)
+        for niveau in range(len(class_x)):
+            for i in range(len(class_x[niveau])):
+
+        pass
+
+        """
+        ens_depart = [(x_, y_) for x_ in np.linspace(t0, t1, taille2) for y_ in np.linspace(t0, t1, taille2)]
+        ens_arrive = [self._num(p[0], p[1]) for p in ens_depart]
+        ens_critere = [[(x_, y_) for x_ in np.linspace(t0, t1, taille)] for y_ in np.linspace(t0, t1, taille)]
+        ens_inverse = []
+        for ligne in ens_critere:
+            ligne_inverse = []
+            for pc in ligne:
+                dif_min = np.inf
+                point_proche = None
+                for i in range(taille2 ** 2):
+                    dif = (ens_arrive[i][0] - pc[0]) ** 2 + (ens_arrive[i][1] - pc[1]) ** 2
+                    if dif < dif_min:
+                        dif_min = dif
+                        point_proche = ens_depart[i]
+                ligne_inverse.append(point_proche)
+            ens_inverse.append(ligne_inverse)
+        return ens_inverse
+        """
+
+    def _find_sim_points(self, x_, y_, t0=-1, t1=1, taille=50):
+        pas = (t1 - t0) / (taille - 1)
+        kx0 = int((x_ - t0) // pas)
+        if kx0 >= taille:
+            kx0 = taille - 1
+        kx1 = kx0 + 1 if kx0 < taille - 1 else kx0
+        t = (x_ - t0 - kx0 * pas) / pas
+        ky0 = int((y_ - t0) // pas)
+        if ky0 >= taille:
+            ky0 = taille - 1
+        ky1 = ky0 + 1 if ky0 < taille - 1 else ky0
+        s = (y_ - t0 - ky0 * pas) / pas
+        return (kx0, ky0), (kx1, ky0), (kx0, ky1), (kx1, ky1), t, s
+
+    def _angle_moyen(self, tab_angles, p00, p10, p01, p11, t, s):
+        a00 = np.array([tab_angles[0, p00[0], p00[1]], tab_angles[1, p00[1], p00[0]]])
+        a10 = np.array([tab_angles[0, p10[0], p10[1]], tab_angles[1, p10[1], p10[0]]])
+        a01 = np.array([tab_angles[0, p01[0], p01[1]], tab_angles[1, p01[1], p01[0]]])
+        a11 = np.array([tab_angles[0, p11[0], p11[1]], tab_angles[1, p11[1], p11[0]]])
+        angle = (1 - t) * ((1 - s) * a00 + s * a01) + t * ((1 - s) * a10 + s * a11)
+        return angle
+
+    def trace(self, tab_angles, t0=-1, t1=1, taille=50, precision=0.01):
+        axe = np.linspace(t0, t1, taille)
+        tab_h = []
+        plt.figure(figsize=(30, 30))
+        for y_ in axe:
+            tab_trace_hx, tab_trace_hy = [-1.0], [y_]
+            while tab_trace_hx[-1] < t1:
+                p00, p10, p01, p11, t, s = self._find_sim_points(tab_trace_hx[-1], tab_trace_hy[-1], t0, t1, taille)
+                # print("point: {}, avec ".format((tab_trace_x[-1], tab_trace_y[-1])), p00, p10, p01, p11, t, s)
+                angle_moy = self._angle_moyen(tab_angles, p00, p10, p01, p11, t, s)
+                tab_trace_hx.append(tab_trace_hx[-1] + precision * math.cos(angle_moy[0]))
+                tab_trace_hy.append(tab_trace_hy[-1] + precision * math.sin(angle_moy[1]))
+            tab_h.append([tab_trace_hx, tab_trace_hy])
+            plt.plot(tab_trace_hx, tab_trace_hy)
+        plt.show()
+        """
+        plt.figure(figsize=(30, 30))
+        for x_ in axe:
+            tab_trace_vx, tab_trace_vy = [x_], [-1.0]
+            while tab_trace_vx[-1] < t1:
+                p00, p10, p01, p11, t, s = self._find_sim_points(tab_trace_vx[-1], tab_trace_vy[-1], t0, t1, taille)
+                # print("point: {}, avec ".format((tab_trace_x[-1], tab_trace_y[-1])), p00, p10, p01, p11, t, s)
+                angle_moy = self._angle_moyen(tab_angles, p00, p10, p01, p11, t, s)
+                tab_trace_vx.append(tab_trace_vx[-1] + precision * math.cos(angle_moy[1]))
+                tab_trace_vy.append(tab_trace_vy[-1] + precision * math.sin(angle_moy[1]))
+            tab_h.append([tab_trace_vx, tab_trace_vy])
+            plt.plot(tab_trace_vx, tab_trace_vy)
+        plt.show()
+        """
+        return tab_h
 
 
 def f_ex(a, b, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
@@ -345,16 +522,16 @@ def f_ex2(a, b, _theta, x_sym=sp.Symbol('x'), y_sym=sp.Symbol('y')):
 
 """ Zone de tester le code"""
 x, y = sp.symbols("x y")
-le_t0, le_t1, la_taille = -1, 1, 50
-ex = fonc_diff_infini(f_ex2(0.2, 5, 5 * math.pi)[0])
-# expr = x + 0.45 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.2 * sp.exp(-10 * (x ** 2 + y ** 2))
-# ex = fonc_diff_infini(expr)
+le_t0, le_t1, la_taille = -1, 1, 200
+expr = f_ex2(0.2, 5, 5 * math.pi)[0]
+# expr = x + 0.2 * sp.exp(-15 * (x ** 2 + y ** 2)), y + 0.045 * sp.exp(-10 * (x ** 2 + y ** 2))
+ex = fonc_diff_infini(expr)
 # print(ex.sym())
 # print(ex.num())
 # print(ex.f(0, 0))
 # print(ex.df_sym())
 # print(ex.df(0, 0))
-ex.draw()
+# ex.draw()
 # ex.draw('h')
 # ex.draw('v')
 # print(ex.tab_df())
@@ -362,10 +539,19 @@ ex.draw()
 # ex.draw_df('h')
 # ex.draw_df('v')
 # ex.draw_all()
-ex.draw_all('h')
-ex.draw_all('v')
+# ex.draw_all('h')
+# ex.draw_all('v')
 # print(ex.tab_df(le_t0, le_t0, la_taille))
 # print(ex.tab_angles_R(-le_t0, le_t1, la_taille))
-ex.draw_angles_ligne('h')
-ex.draw_angles_ligne('v')
-ani = ex.play_angles('h')
+# ex.draw_angles_ligne('h', taille=la_taille, indice=la_taille // 4, val_min=-0.01, val_max=0.01)
+# ex.draw_angles_ligne('v', taille=la_taille, indice=la_taille // 4, val_min=-0.01, val_max=0.01)
+# ani = ex.play_angles('h',bsave=False)
+# tr = ex.trace(ex.tab_angles_R(le_t0, le_t1, la_taille), le_t0, le_t1, la_taille, 0.0001)
+axe = np.linspace(-1, 1, 20)
+xx, yy = np.meshgrid(axe, axe)
+tab_distance = ex._distance(-1, -1, xx, yy)
+nn = math.ceil((20 // 2) * math.sqrt(2))
+resx, resy = ex._classifier_points_cles(tab_distance, xx, yy, 2 / 19, nn)
+for i in range(len(resx)):
+    plt.scatter(resx[i], resy[i])
+    plt.show()
